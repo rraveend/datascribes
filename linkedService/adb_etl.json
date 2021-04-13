@@ -1,0 +1,20 @@
+{
+	"name": "adb_etl",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "AzureDatabricks",
+		"typeProperties": {
+			"domain": "https://adb-4979278838401978.18.azuredatabricks.net",
+			"accessToken": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "akv_global",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "dbricks"
+			},
+			"existingClusterId": "0729-082332-bulge583"
+		}
+	}
+}

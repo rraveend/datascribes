@@ -1,0 +1,344 @@
+{
+	"name": "pl_loaddatatodb",
+	"properties": {
+		"activities": [
+			{
+				"name": "cp_load_gene",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobStorageReadSettings",
+							"recursive": true
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"sink": {
+						"type": "AzureMySqlSink",
+						"writeBatchSize": 10000,
+						"writeBatchTimeout": "00:00:30"
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"name": "gene_id",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "gene_id",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "biotype",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "biotype",
+									"type": "String",
+									"physicalType": "text"
+								}
+							},
+							{
+								"source": {
+									"name": "analysis_id",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "analysis_id",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "seq_region_id",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "seq_region_id",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "seq_region_start",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "seq_region_start",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "seq_region_end",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "seq_region_end",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "seq_region_strand",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "seq_region_strand",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "display_xref_id",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "display_xref_id",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "source",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "source",
+									"type": "String",
+									"physicalType": "text"
+								}
+							},
+							{
+								"source": {
+									"name": "description",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "description",
+									"type": "String",
+									"physicalType": "text"
+								}
+							},
+							{
+								"source": {
+									"name": "is_current",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "is_current",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "canonical_transcript_id",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "canonical_transcript_id",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "stable_id",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "stable_id",
+									"type": "String",
+									"physicalType": "text"
+								}
+							},
+							{
+								"source": {
+									"name": "version",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "version",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "created_date",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "created_date",
+									"type": "String",
+									"physicalType": "text"
+								}
+							},
+							{
+								"source": {
+									"name": "modified_date",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "modified_date",
+									"type": "String",
+									"physicalType": "text"
+								}
+							}
+						],
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "ds_gene_src",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_gene_dest",
+						"type": "DatasetReference"
+					}
+				]
+			},
+			{
+				"name": "cp_load_geneattrib",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobStorageReadSettings",
+							"recursive": true
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"sink": {
+						"type": "AzureMySqlSink",
+						"writeBatchSize": 10000,
+						"writeBatchTimeout": "00:00:30"
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"name": "gene_id",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "gene_id",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "attrib_type_id",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "attrib_type_id",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "value",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "value",
+									"type": "String",
+									"physicalType": "text"
+								}
+							}
+						],
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "ds_geneattrib_src",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_geneattrib_dest",
+						"type": "DatasetReference"
+					}
+				]
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2020-08-27T12:31:34Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

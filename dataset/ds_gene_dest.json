@@ -1,0 +1,19 @@
+{
+	"name": "ds_gene_dest",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "mysqlcon",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "Destinations"
+		},
+		"annotations": [],
+		"type": "AzureMySqlTable",
+		"schema": [],
+		"typeProperties": {
+			"tableName": "gene"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

@@ -1,0 +1,28 @@
+{
+	"name": "ds_parq_gene_raw",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "adls_dl",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "Destinations"
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": "gene",
+				"folderPath": {
+					"value": "raw/{year}/{month}/{day}/{hour}/",
+					"type": "Expression"
+				},
+				"fileSystem": "datalake"
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

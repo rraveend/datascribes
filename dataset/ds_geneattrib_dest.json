@@ -1,0 +1,38 @@
+{
+	"name": "ds_geneattrib_dest",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "mysqlcon",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "Destinations"
+		},
+		"annotations": [],
+		"type": "AzureMySqlTable",
+		"schema": [
+			{
+				"name": "gene_id",
+				"type": "int",
+				"precision": 0,
+				"scale": 0
+			},
+			{
+				"name": "attrib_type_id",
+				"type": "int",
+				"precision": 0,
+				"scale": 0
+			},
+			{
+				"name": "value",
+				"type": "text",
+				"precision": 0,
+				"scale": 0
+			}
+		],
+		"typeProperties": {
+			"tableName": "geneattrib"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

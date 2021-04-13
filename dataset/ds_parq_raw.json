@@ -1,0 +1,45 @@
+{
+	"name": "ds_parq_raw",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "adls_dl",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"year": {
+				"type": "string",
+				"defaultValue": "2020"
+			},
+			"month": {
+				"type": "string",
+				"defaultValue": "08"
+			},
+			"day": {
+				"type": "string",
+				"defaultValue": "28"
+			},
+			"entityName": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "Destinations"
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": "gene",
+				"folderPath": {
+					"value": "@concat('raw/',dataset().entityName,'/',dataset().year,'/',dataset().month,'/',dataset().day)",
+					"type": "Expression"
+				},
+				"fileSystem": "datalake"
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}
