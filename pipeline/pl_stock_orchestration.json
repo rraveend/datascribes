@@ -1,6 +1,22 @@
 {
 	"name": "pl_stock_orchestration",
 	"properties": {
+		"activities": [
+			{
+				"name": "Validation1",
+				"type": "Validation",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "ds_stock_src",
+						"type": "DatasetReference"
+					},
+					"timeout": "1.00:00:00",
+					"sleep": 10
+				}
+			}
+		],
 		"annotations": []
 	}
 }
