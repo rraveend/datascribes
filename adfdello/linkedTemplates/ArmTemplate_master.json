@@ -1,0 +1,153 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "adfdello"
+		},
+		"SalesforceServiceCloud1_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'SalesforceServiceCloud1'"
+		},
+		"SalesforceServiceCloud1_securityToken": {
+			"type": "secureString",
+			"metadata": "Secure string for 'securityToken' of 'SalesforceServiceCloud1'"
+		},
+		"SalesforceServiceCloud2_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'SalesforceServiceCloud2'"
+		},
+		"SalesforceServiceCloud2_securityToken": {
+			"type": "secureString",
+			"metadata": "Secure string for 'securityToken' of 'SalesforceServiceCloud2'"
+		},
+		"mysqlcon_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'mysqlcon'"
+		},
+		"sqlDB_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'sqlDB'"
+		},
+		"SalesforceServiceCloud1_properties_typeProperties_environmentUrl": {
+			"type": "string",
+			"defaultValue": "https://tau-ac--pardot.my.salesforce.com/"
+		},
+		"SalesforceServiceCloud1_properties_typeProperties_username": {
+			"type": "string",
+			"defaultValue": "bi@tau.ac.il.snd"
+		},
+		"SalesforceServiceCloud2_properties_typeProperties_environmentUrl": {
+			"type": "string",
+			"defaultValue": "https://tau-ac--pardot.my.salesforce.com/"
+		},
+		"SalesforceServiceCloud2_properties_typeProperties_username": {
+			"type": "string",
+			"defaultValue": "bi@tau.ac.il.snd"
+		},
+		"adls_dl_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://adlsgen2del.dfs.core.windows.net"
+		},
+		"akv_global_properties_typeProperties_baseUrl": {
+			"type": "string",
+			"defaultValue": "https://rituvault.vault.azure.net/"
+		},
+		"storageblob_properties_typeProperties_sasUri_secretName": {
+			"type": "string",
+			"defaultValue": "blobsas"
+		},
+		"containerUri": {
+			"type": "string",
+			"metadata": "URI to storage account containing linked ARM templates"
+		},
+		"containerSasToken": {
+			"type": "string",
+			"metadata": "Sas token to storage account containing linked ARM templates"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "adfdello_ArmTemplate_0",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2018-02-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_0.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					},
+					"SalesforceServiceCloud1_password": {
+						"value": "[parameters('SalesforceServiceCloud1_password')]"
+					},
+					"SalesforceServiceCloud1_securityToken": {
+						"value": "[parameters('SalesforceServiceCloud1_securityToken')]"
+					},
+					"SalesforceServiceCloud2_password": {
+						"value": "[parameters('SalesforceServiceCloud2_password')]"
+					},
+					"SalesforceServiceCloud2_securityToken": {
+						"value": "[parameters('SalesforceServiceCloud2_securityToken')]"
+					},
+					"mysqlcon_connectionString": {
+						"value": "[parameters('mysqlcon_connectionString')]"
+					},
+					"sqlDB_connectionString": {
+						"value": "[parameters('sqlDB_connectionString')]"
+					},
+					"SalesforceServiceCloud1_properties_typeProperties_environmentUrl": {
+						"value": "[parameters('SalesforceServiceCloud1_properties_typeProperties_environmentUrl')]"
+					},
+					"SalesforceServiceCloud1_properties_typeProperties_username": {
+						"value": "[parameters('SalesforceServiceCloud1_properties_typeProperties_username')]"
+					},
+					"SalesforceServiceCloud2_properties_typeProperties_environmentUrl": {
+						"value": "[parameters('SalesforceServiceCloud2_properties_typeProperties_environmentUrl')]"
+					},
+					"SalesforceServiceCloud2_properties_typeProperties_username": {
+						"value": "[parameters('SalesforceServiceCloud2_properties_typeProperties_username')]"
+					},
+					"adls_dl_properties_typeProperties_url": {
+						"value": "[parameters('adls_dl_properties_typeProperties_url')]"
+					},
+					"akv_global_properties_typeProperties_baseUrl": {
+						"value": "[parameters('akv_global_properties_typeProperties_baseUrl')]"
+					},
+					"storageblob_properties_typeProperties_sasUri_secretName": {
+						"value": "[parameters('storageblob_properties_typeProperties_sasUri_secretName')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "adfdello_ArmTemplate_1",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2018-02-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_1.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					}
+				}
+			},
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/deployments', 'adfdello_ArmTemplate_0')]"
+			]
+		}
+	]
+}

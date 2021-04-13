@@ -1,0 +1,54 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "adfdello"
+		},
+		"SalesforceServiceCloud1_password": {
+			"value": ""
+		},
+		"SalesforceServiceCloud1_securityToken": {
+			"value": ""
+		},
+		"SalesforceServiceCloud2_password": {
+			"value": ""
+		},
+		"SalesforceServiceCloud2_securityToken": {
+			"value": ""
+		},
+		"mysqlcon_connectionString": {
+			"value": ""
+		},
+		"sqlDB_connectionString": {
+			"value": ""
+		},
+		"SalesforceServiceCloud1_properties_typeProperties_environmentUrl": {
+			"value": "https://tau-ac--pardot.my.salesforce.com/"
+		},
+		"SalesforceServiceCloud1_properties_typeProperties_username": {
+			"value": "bi@tau.ac.il.snd"
+		},
+		"SalesforceServiceCloud2_properties_typeProperties_environmentUrl": {
+			"value": "https://tau-ac--pardot.my.salesforce.com/"
+		},
+		"SalesforceServiceCloud2_properties_typeProperties_username": {
+			"value": "bi@tau.ac.il.snd"
+		},
+		"adls_dl_properties_typeProperties_url": {
+			"value": "https://adlsgen2del.dfs.core.windows.net"
+		},
+		"akv_global_properties_typeProperties_baseUrl": {
+			"value": "https://rituvault.vault.azure.net/"
+		},
+		"storageblob_properties_typeProperties_sasUri_secretName": {
+			"value": "blobsas"
+		},
+		"containerUri": {
+			"value": ""
+		},
+		"containerSasToken": {
+			"value": ""
+		}
+	}
+}

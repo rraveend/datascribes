@@ -1,0 +1,779 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "adfdello"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_genome_orchestration_DQ')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "cp_extractdata_gene",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "Validate Datasets",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [
+							{
+								"name": "EntityName",
+								"value": "gene"
+							}
+						],
+						"typeProperties": {
+							"source": {
+								"type": "AzureMySqlSource",
+								"queryTimeout": "02:00:00"
+							},
+							"sink": {
+								"type": "ParquetSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "ParquetWriteSettings"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "ds_mysql_src",
+								"type": "DatasetReference",
+								"parameters": {
+									"tableName": "gene"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "ds_parq_raw",
+								"type": "DatasetReference",
+								"parameters": {
+									"year": "2020",
+									"month": "08",
+									"day": "28",
+									"entityName": "gene"
+								}
+							}
+						]
+					},
+					{
+						"name": "cp_extractdata_biotype",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "Validate Datasets",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [
+							{
+								"name": "EntityName",
+								"value": "biotype"
+							}
+						],
+						"typeProperties": {
+							"source": {
+								"type": "AzureMySqlSource",
+								"queryTimeout": "02:00:00"
+							},
+							"sink": {
+								"type": "ParquetSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "ParquetWriteSettings"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "ds_mysql_src",
+								"type": "DatasetReference",
+								"parameters": {
+									"tableName": "biotype"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "ds_parq_raw",
+								"type": "DatasetReference",
+								"parameters": {
+									"year": "2020",
+									"month": "08",
+									"day": "28",
+									"entityName": "biotype"
+								}
+							}
+						]
+					},
+					{
+						"name": "cp_extractdata_geneattrib",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "Validate Datasets",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [
+							{
+								"name": "EntityName",
+								"value": "geneattrib"
+							}
+						],
+						"typeProperties": {
+							"source": {
+								"type": "AzureMySqlSource",
+								"queryTimeout": "02:00:00"
+							},
+							"sink": {
+								"type": "ParquetSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "ParquetWriteSettings"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "ds_mysql_src",
+								"type": "DatasetReference",
+								"parameters": {
+									"tableName": "geneattrib"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "ds_parq_raw",
+								"type": "DatasetReference",
+								"parameters": {
+									"year": "2020",
+									"month": "08",
+									"day": "28",
+									"entityName": "geneattrib"
+								}
+							}
+						]
+					},
+					{
+						"name": "adb_stage",
+						"description": "store genome datasets into Hive tables ",
+						"type": "DatabricksNotebook",
+						"dependsOn": [
+							{
+								"activity": "cp_extractdata_gene",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "cp_extractdata_biotype",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "cp_extractdata_geneattrib",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Genome/KitchenLayer"
+						},
+						"linkedServiceName": {
+							"referenceName": "adb_etl",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "adb_logerror",
+						"description": "Transform data into Data Lake in a dimensional model for serving from Power BI",
+						"type": "DatabricksNotebook",
+						"dependsOn": [
+							{
+								"activity": "Data Quality Checks",
+								"dependencyConditions": [
+									"Failed"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Genome/KitchenLayer"
+						},
+						"linkedServiceName": {
+							"referenceName": "adb_etl",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "adb_servinglayer_load",
+						"description": "Transform data into Data Lake in a dimensional model for serving from Power BI",
+						"type": "DatabricksNotebook",
+						"dependsOn": [
+							{
+								"activity": "Data Quality Checks",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Genome/KitchenLayer"
+						},
+						"linkedServiceName": {
+							"referenceName": "adb_etl",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "Data Quality Checks",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Get Entities",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@variables('listofEntities')",
+								"type": "Expression"
+							},
+							"batchCount": 10,
+							"activities": [
+								{
+									"name": "adb_applyDW",
+									"description": "Apply Data quality Rules for the entity",
+									"type": "DatabricksNotebook",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"notebookPath": "/Genome/KitchenLayer"
+									},
+									"linkedServiceName": {
+										"referenceName": "adb_etl",
+										"type": "LinkedServiceReference"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "Validate Datasets",
+						"type": "Validation",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "ds_gene_src",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"timeout": "7.00:00:00",
+							"sleep": 10
+						}
+					},
+					{
+						"name": "Get Entities",
+						"type": "Lookup",
+						"dependsOn": [
+							{
+								"activity": "adb_stage",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureMySqlSource",
+								"queryTimeout": "02:00:00"
+							},
+							"dataset": {
+								"referenceName": "ds_gene_dest",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						}
+					}
+				],
+				"concurrency": 1,
+				"variables": {
+					"listofEntities": {
+						"type": "Array"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-04-13T11:02:45Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_loaddatatodb')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "cp_load_gene",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobStorageReadSettings",
+									"recursive": true
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "AzureMySqlSink",
+								"writeBatchSize": 10000,
+								"writeBatchTimeout": "00:00:30"
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"name": "gene_id",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "gene_id",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "biotype",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "biotype",
+											"type": "String",
+											"physicalType": "text"
+										}
+									},
+									{
+										"source": {
+											"name": "analysis_id",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "analysis_id",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "seq_region_id",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "seq_region_id",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "seq_region_start",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "seq_region_start",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "seq_region_end",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "seq_region_end",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "seq_region_strand",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "seq_region_strand",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "display_xref_id",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "display_xref_id",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "source",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "source",
+											"type": "String",
+											"physicalType": "text"
+										}
+									},
+									{
+										"source": {
+											"name": "description",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "description",
+											"type": "String",
+											"physicalType": "text"
+										}
+									},
+									{
+										"source": {
+											"name": "is_current",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "is_current",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "canonical_transcript_id",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "canonical_transcript_id",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "stable_id",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "stable_id",
+											"type": "String",
+											"physicalType": "text"
+										}
+									},
+									{
+										"source": {
+											"name": "version",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "version",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "created_date",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "created_date",
+											"type": "String",
+											"physicalType": "text"
+										}
+									},
+									{
+										"source": {
+											"name": "modified_date",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "modified_date",
+											"type": "String",
+											"physicalType": "text"
+										}
+									}
+								],
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "ds_gene_src",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "ds_gene_dest",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "cp_load_geneattrib",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobStorageReadSettings",
+									"recursive": true
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "AzureMySqlSink",
+								"writeBatchSize": 10000,
+								"writeBatchTimeout": "00:00:30"
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"name": "gene_id",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "gene_id",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "attrib_type_id",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "attrib_type_id",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "value",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "value",
+											"type": "String",
+											"physicalType": "text"
+										}
+									}
+								],
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "ds_geneattrib_src",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "ds_geneattrib_dest",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"annotations": [],
+				"lastPublishTime": "2020-08-27T12:31:34Z"
+			},
+			"dependsOn": []
+		}
+	]
+}
