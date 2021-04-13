@@ -1,0 +1,576 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name"
+		},
+		"adb_etl": {
+			"type": "string"
+		},
+		"mysqlcon": {
+			"type": "string"
+		},
+		"adls_dl": {
+			"type": "string"
+		},
+		"storageblob": {
+			"type": "string"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_genome_orchestration_DQ')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "cp_extractdata_gene",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "Validate Datasets",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [
+							{
+								"name": "EntityName",
+								"value": "gene"
+							}
+						],
+						"typeProperties": {
+							"source": {
+								"type": "AzureMySqlSource",
+								"queryTimeout": "02:00:00"
+							},
+							"sink": {
+								"type": "ParquetSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "ParquetWriteSettings"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "ds_mysql_src",
+								"type": "DatasetReference",
+								"parameters": {
+									"tableName": "gene"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "ds_parq_raw",
+								"type": "DatasetReference",
+								"parameters": {
+									"year": "2020",
+									"month": "08",
+									"day": "28",
+									"entityName": "gene"
+								}
+							}
+						]
+					},
+					{
+						"name": "cp_extractdata_biotype",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "Validate Datasets",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [
+							{
+								"name": "EntityName",
+								"value": "biotype"
+							}
+						],
+						"typeProperties": {
+							"source": {
+								"type": "AzureMySqlSource",
+								"queryTimeout": "02:00:00"
+							},
+							"sink": {
+								"type": "ParquetSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "ParquetWriteSettings"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "ds_mysql_src",
+								"type": "DatasetReference",
+								"parameters": {
+									"tableName": "biotype"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "ds_parq_raw",
+								"type": "DatasetReference",
+								"parameters": {
+									"year": "2020",
+									"month": "08",
+									"day": "28",
+									"entityName": "biotype"
+								}
+							}
+						]
+					},
+					{
+						"name": "cp_extractdata_geneattrib",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "Validate Datasets",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [
+							{
+								"name": "EntityName",
+								"value": "geneattrib"
+							}
+						],
+						"typeProperties": {
+							"source": {
+								"type": "AzureMySqlSource",
+								"queryTimeout": "02:00:00"
+							},
+							"sink": {
+								"type": "ParquetSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "ParquetWriteSettings"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "ds_mysql_src",
+								"type": "DatasetReference",
+								"parameters": {
+									"tableName": "geneattrib"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "ds_parq_raw",
+								"type": "DatasetReference",
+								"parameters": {
+									"year": "2020",
+									"month": "08",
+									"day": "28",
+									"entityName": "geneattrib"
+								}
+							}
+						]
+					},
+					{
+						"name": "adb_stage",
+						"description": "store genome datasets into Hive tables ",
+						"type": "DatabricksNotebook",
+						"dependsOn": [
+							{
+								"activity": "cp_extractdata_gene",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "cp_extractdata_biotype",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "cp_extractdata_geneattrib",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Genome/KitchenLayer"
+						},
+						"linkedServiceName": {
+							"referenceName": "[parameters('adb_etl')]",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "adb_logerror",
+						"description": "Transform data into Data Lake in a dimensional model for serving from Power BI",
+						"type": "DatabricksNotebook",
+						"dependsOn": [
+							{
+								"activity": "Data Quality Checks",
+								"dependencyConditions": [
+									"Failed"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Genome/KitchenLayer"
+						},
+						"linkedServiceName": {
+							"referenceName": "[parameters('adb_etl')]",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "adb_servinglayer_load",
+						"description": "Transform data into Data Lake in a dimensional model for serving from Power BI",
+						"type": "DatabricksNotebook",
+						"dependsOn": [
+							{
+								"activity": "Data Quality Checks",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Genome/KitchenLayer"
+						},
+						"linkedServiceName": {
+							"referenceName": "[parameters('adb_etl')]",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "Data Quality Checks",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Get Entities",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@variables('listofEntities')",
+								"type": "Expression"
+							},
+							"batchCount": 10,
+							"activities": [
+								{
+									"name": "adb_applyDW",
+									"description": "Apply Data quality Rules for the entity",
+									"type": "DatabricksNotebook",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"notebookPath": "/Genome/KitchenLayer"
+									},
+									"linkedServiceName": {
+										"referenceName": "[parameters('adb_etl')]",
+										"type": "LinkedServiceReference"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "Validate Datasets",
+						"type": "Validation",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "ds_gene_src",
+								"type": "DatasetReference"
+							},
+							"timeout": "7.00:00:00",
+							"sleep": 10
+						}
+					},
+					{
+						"name": "Get Entities",
+						"type": "Lookup",
+						"dependsOn": [
+							{
+								"activity": "adb_stage",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureMySqlSource",
+								"queryTimeout": "02:00:00"
+							},
+							"dataset": {
+								"referenceName": "ds_gene_dest",
+								"type": "DatasetReference"
+							}
+						}
+					}
+				],
+				"concurrency": 1,
+				"variables": {
+					"listofEntities": {
+						"type": "Array"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-04-13T11:02:45Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/ds_mysql_src')]",
+				"[concat(variables('factoryId'), '/datasets/ds_parq_raw')]",
+				"[concat(variables('factoryId'), '/datasets/ds_gene_src')]",
+				"[concat(variables('factoryId'), '/datasets/ds_gene_dest')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_mysql_src')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "[parameters('mysqlcon')]",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"tableName": {
+						"type": "string",
+						"defaultValue": "gene"
+					}
+				},
+				"folder": {
+					"name": "Data sources"
+				},
+				"annotations": [
+					"azure mysql genome database"
+				],
+				"type": "AzureMySqlTable",
+				"schema": [],
+				"typeProperties": {
+					"tableName": {
+						"value": "@dataset().tableName",
+						"type": "Expression"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_parq_raw')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "[parameters('adls_dl')]",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"year": {
+						"type": "string",
+						"defaultValue": "2020"
+					},
+					"month": {
+						"type": "string",
+						"defaultValue": "08"
+					},
+					"day": {
+						"type": "string",
+						"defaultValue": "28"
+					},
+					"entityName": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "Destinations"
+				},
+				"annotations": [],
+				"type": "Parquet",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "gene",
+						"folderPath": {
+							"value": "@concat('raw/',dataset().entityName,'/',dataset().year,'/',dataset().month,'/',dataset().day)",
+							"type": "Expression"
+						},
+						"fileSystem": "datalake"
+					},
+					"compressionCodec": "snappy"
+				},
+				"schema": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_gene_src')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "[parameters('storageblob')]",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "Data sources"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": "gene.csv",
+						"container": "tau"
+					},
+					"columnDelimiter": ";",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_gene_dest')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "[parameters('mysqlcon')]",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "Destinations"
+				},
+				"annotations": [],
+				"type": "AzureMySqlTable",
+				"schema": [],
+				"typeProperties": {
+					"tableName": "gene"
+				}
+			},
+			"dependsOn": []
+		}
+	]
+}
