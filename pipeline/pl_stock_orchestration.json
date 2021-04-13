@@ -3,7 +3,7 @@
 	"properties": {
 		"activities": [
 			{
-				"name": "Validation1",
+				"name": "Validate Files are available",
 				"type": "Validation",
 				"dependsOn": [],
 				"userProperties": [],
