@@ -581,7 +581,7 @@
 				"typeProperties": {
 					"variableName": "loadError",
 					"value": {
-						"value": "@concat('TEST','RAKESH')",
+						"value": "@concat('\"Entity\" :\"Sales.Territory\", \"ErrorMessage\": \"',activity('Copy territory').output.errors[0].Message,'\"}')",
 						"type": "Expression"
 					}
 				}
