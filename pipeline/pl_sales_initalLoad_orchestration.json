@@ -581,7 +581,7 @@
 				"typeProperties": {
 					"variableName": "loadError",
 					"value": {
-						"value": "contact(\"Error\",\"Test\")",
+						"value": "@concat('TEST','RAKESH')",
 						"type": "Expression"
 					}
 				}
