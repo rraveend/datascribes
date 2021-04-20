@@ -1,0 +1,68 @@
+{
+	"name": "pl_sales_initalLoad_orchestration_apivalidation",
+	"properties": {
+		"activities": [
+			{
+				"name": "Set Error variable",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "Get Territory Metadata",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "loadError",
+					"value": {
+						"value": "@activity('Get Territory Metadata').output.structure",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Get Territory Metadata",
+				"type": "GetMetadata",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "src_csv",
+						"type": "DatasetReference",
+						"parameters": {
+							"fileName": "salesterritory.csv"
+						}
+					},
+					"fieldList": [
+						"structure"
+					],
+					"storeSettings": {
+						"type": "AzureBlobFSReadSettings",
+						"enablePartitionDiscovery": false
+					},
+					"formatSettings": {
+						"type": "DelimitedTextReadSettings"
+					}
+				}
+			}
+		],
+		"variables": {
+			"TerritoryMetadata": {
+				"type": "Array"
+			}
+		},
+		"folder": {
+			"name": "HUB"
+		},
+		"annotations": []
+	}
+}
