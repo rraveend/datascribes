@@ -581,9 +581,42 @@
 				"typeProperties": {
 					"variableName": "loadError",
 					"value": {
-						"value": "concat('{ \"Entity\" :\"',@activity('Copy territory').output.errors[0].Message,'\"}')",
+						"value": "concat('{ \"Entity\" :\"Sales.Territory\", \"ErrorMessage\": \"',@activity('Copy territory').output.errors[0].Message,'\"}')",
 						"type": "Expression"
 					}
+				}
+			},
+			{
+				"name": "Log Error",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "Set Error variable",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/hub/logError",
+					"baseParameters": {
+						"ErrorMessage": {
+							"value": "@variables('loadError')",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "adb_etl",
+					"type": "LinkedServiceReference"
 				}
 			}
 		],
