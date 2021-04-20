@@ -1,0 +1,9 @@
+{
+	"name": "pl_sales_initalLoad_orchestration",
+	"properties": {
+		"folder": {
+			"name": "HUB"
+		},
+		"annotations": []
+	}
+}
