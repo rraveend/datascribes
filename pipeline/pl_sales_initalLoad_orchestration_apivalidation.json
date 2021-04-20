@@ -15,7 +15,7 @@
 				],
 				"userProperties": [],
 				"typeProperties": {
-					"variableName": "loadError",
+					"variableName": "TerritoryMetadata",
 					"value": {
 						"value": "@activity('Get Territory Metadata').output.structure",
 						"type": "Expression"
