@@ -40,7 +40,7 @@
 				"type": "AzureFunctionActivity",
 				"dependsOn": [
 					{
-						"activity": "Set Metadata Variable",
+						"activity": "Get Territory Metadata",
 						"dependencyConditions": [
 							"Succeeded"
 						]
@@ -57,34 +57,20 @@
 				"typeProperties": {
 					"functionName": "dataValidationApi",
 					"method": "POST",
+					"headers": {
+						"EntityName": {
+							"value": "@activity('Get Territory Metadata').output.itemName",
+							"type": "Expression"
+						}
+					},
 					"body": {
-						"value": "@concat(activity('Get Territory Metadata').output.itemName,activity('Get Territory Metadata').output.structure)",
+						"value": "@activity('Get Territory Metadata').output.structure",
 						"type": "Expression"
 					}
 				},
 				"linkedServiceName": {
 					"referenceName": "ls_af_datavalidation",
 					"type": "LinkedServiceReference"
-				}
-			},
-			{
-				"name": "Set Metadata Variable",
-				"type": "SetVariable",
-				"dependsOn": [
-					{
-						"activity": "Get Territory Metadata",
-						"dependencyConditions": [
-							"Succeeded"
-						]
-					}
-				],
-				"userProperties": [],
-				"typeProperties": {
-					"variableName": "EntityMetadata",
-					"value": {
-						"value": "@join(activity('Get Territory Metadata').output.structure,'')",
-						"type": "Expression"
-					}
 				}
 			}
 		],
