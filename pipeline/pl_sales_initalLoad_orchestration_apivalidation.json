@@ -3,26 +3,6 @@
 	"properties": {
 		"activities": [
 			{
-				"name": "Set Error variable",
-				"type": "SetVariable",
-				"dependsOn": [
-					{
-						"activity": "Get Territory Metadata",
-						"dependencyConditions": [
-							"Succeeded"
-						]
-					}
-				],
-				"userProperties": [],
-				"typeProperties": {
-					"variableName": "TerritoryMetadata",
-					"value": {
-						"value": "@activity('Get Territory Metadata').output.structure",
-						"type": "Expression"
-					}
-				}
-			},
-			{
 				"name": "Get Territory Metadata",
 				"type": "GetMetadata",
 				"dependsOn": [],
@@ -60,7 +40,7 @@
 				"type": "AzureFunctionActivity",
 				"dependsOn": [
 					{
-						"activity": "Set Error variable",
+						"activity": "Append variable2",
 						"dependencyConditions": [
 							"Succeeded"
 						]
@@ -78,13 +58,53 @@
 					"functionName": "dataValidationApi",
 					"method": "POST",
 					"body": {
-						"value": "@variables('TerritoryMetadata')",
+						"value": "@concat(activity('Get Territory Metadata').output.itemName,activity('Get Territory Metadata').output.structure)",
 						"type": "Expression"
 					}
 				},
 				"linkedServiceName": {
 					"referenceName": "ls_af_datavalidation",
 					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "Append variable1",
+				"type": "AppendVariable",
+				"dependsOn": [
+					{
+						"activity": "Get Territory Metadata",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "TerritoryMetadata",
+					"value": {
+						"value": "@activity('Get Territory Metadata').output.itemName",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Append variable2",
+				"type": "AppendVariable",
+				"dependsOn": [
+					{
+						"activity": "Append variable1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "TerritoryMetadata",
+					"value": {
+						"value": "@activity('Get Territory Metadata').output.structure",
+						"type": "Expression"
+					}
 				}
 			}
 		],
