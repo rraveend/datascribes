@@ -35,6 +35,19 @@
 						}
 					]
 				}
+			},
+			{
+				"name": "Data Quality Check",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Load Entities",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": []
 			}
 		],
 		"variables": {
