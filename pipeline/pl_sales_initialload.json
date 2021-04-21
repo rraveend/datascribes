@@ -1,0 +1,54 @@
+{
+	"name": "pl_sales_initialload",
+	"properties": {
+		"activities": [
+			{
+				"name": "Load Entities",
+				"type": "ForEach",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@variables('entities')",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "Load Entity",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "pl_entity_load",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"EntityName": {
+										"value": "@item()",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"variables": {
+			"entities": {
+				"type": "Array",
+				"defaultValue": [
+					"customers",
+					"salesterritory",
+					"orders"
+				]
+			}
+		},
+		"folder": {
+			"name": "HUB"
+		},
+		"annotations": []
+	}
+}
