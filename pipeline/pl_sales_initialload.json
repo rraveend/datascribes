@@ -12,6 +12,7 @@
 						"value": "@variables('entities')",
 						"type": "Expression"
 					},
+					"isSequential": false,
 					"activities": [
 						{
 							"name": "Load Entity",
