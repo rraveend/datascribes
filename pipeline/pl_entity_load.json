@@ -90,7 +90,7 @@
 				"userProperties": [],
 				"typeProperties": {
 					"expression": {
-						"value": "@activity('Validate Metadata').output.Status = 'Error'",
+						"value": "@equals(activity('Validate Metadata').output.Status , 'Error')",
 						"type": "Expression"
 					},
 					"ifFalseActivities": [
