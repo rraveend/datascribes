@@ -154,7 +154,8 @@
 		],
 		"parameters": {
 			"EntityName": {
-				"type": "string"
+				"type": "string",
+				"defaultValue": "customers"
 			}
 		},
 		"variables": {
