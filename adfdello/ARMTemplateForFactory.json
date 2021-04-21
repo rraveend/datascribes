@@ -31,6 +31,10 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'sqlDB'"
 		},
+		"ls_af_datavalidation_functionKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'functionKey' of 'ls_af_datavalidation'"
+		},
 		"SalesforceServiceCloud1_properties_typeProperties_environmentUrl": {
 			"type": "string",
 			"defaultValue": "https://tau-ac--pardot.my.salesforce.com/"
@@ -58,6 +62,10 @@
 		"storageblob_properties_typeProperties_sasUri_secretName": {
 			"type": "string",
 			"defaultValue": "blobsas"
+		},
+		"ls_af_datavalidation_properties_typeProperties_functionAppUrl": {
+			"type": "string",
+			"defaultValue": "https://datavalidationfa.azurewebsites.net"
 		}
 	},
 	"variables": {
@@ -1104,6 +1112,649 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/pl_sales_initalLoad_orchestration')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "copy customers",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "ParquetSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "ParquetWriteSettings"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"name": "CustomerID",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "CustomerID",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "TerritoryID",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "TerritoryID",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "AccountNumber",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "AccountNumber",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "FirstName",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "FirstName",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "LastName",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "LastName",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "Title",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "Title",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "PhoneNumber",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "PhoneNumber",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "EmailAddress",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "EmailAddress",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									}
+								],
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "src_csv",
+								"type": "DatasetReference",
+								"parameters": {
+									"fileName": "customers.csv"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "dst_parquet",
+								"type": "DatasetReference",
+								"parameters": {
+									"fileName": "customers.parquet"
+								}
+							}
+						]
+					},
+					{
+						"name": "copy orders",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "ParquetSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "ParquetWriteSettings"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"name": "SalesOrderID",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "SalesOrderID",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "OrderDate",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "OrderDate",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "DueDate",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "DueDate",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "ShipDate",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "ShipDate",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "Status",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "Status",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "SalesOrderNumber",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "SalesOrderNumber",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "AccountNumber",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "AccountNumber",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "CustomerID",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "CustomerID",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "TerritoryID",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "TerritoryID",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "SubTotal",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "SubTotal",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "TaxAmt",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "TaxAmt",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "Freight",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "Freight",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "TotalDue",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "TotalDue",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									}
+								],
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "src_csv",
+								"type": "DatasetReference",
+								"parameters": {
+									"fileName": "orders.csv"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "dst_parquet",
+								"type": "DatasetReference",
+								"parameters": {
+									"fileName": "orders.parquet"
+								}
+							}
+						]
+					},
+					{
+						"name": "copy territory",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "ParquetSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "ParquetWriteSettings"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"name": "TerritoryID",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "TerritoryID",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "Name",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "Name",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "CountryRegionCode",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "CountryRegionCode",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "Group",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "Group",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "SalesYTD",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "SalesYTD",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "SalesLastYear",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "SalesLastYear",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "CostYTD",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "CostYTD",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "CostLastYear",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "CostLastYear",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "rowguid",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "rowguid",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "ModifiedDate",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "ModifiedDate",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									}
+								],
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "src_csv",
+								"type": "DatasetReference",
+								"parameters": {
+									"fileName": "salesterritory.csv"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "dst_parquet",
+								"type": "DatasetReference",
+								"parameters": {
+									"fileName": "salesterritory.parquet"
+								}
+							}
+						]
+					},
+					{
+						"name": "Set Error variable",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "copy territory",
+								"dependencyConditions": [
+									"Failed"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "loadError",
+							"value": {
+								"value": "@concat('{\"Entity\" :\"Sales.Territory\", \"ErrorMessage\": \"',activity('Copy territory').output.errors[0].Message,'\"}')",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "Log Error",
+						"type": "DatabricksNotebook",
+						"dependsOn": [
+							{
+								"activity": "Set Error variable",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/hub/logError",
+							"baseParameters": {
+								"ErrorMessage": {
+									"value": "@variables('loadError')",
+									"type": "Expression"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "adb_etl",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"variables": {
+					"loadErrorObject": {
+						"type": "Array"
+					},
+					"loadError": {
+						"type": "String"
+					}
+				},
+				"folder": {
+					"name": "HUB"
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/src_csv')]",
+				"[concat(variables('factoryId'), '/datasets/dst_parquet')]",
+				"[concat(variables('factoryId'), '/linkedServices/adb_etl')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/pl_stock_orchestration')]",
 			"type": "Microsoft.DataFactory/factories/pipelines",
 			"apiVersion": "2018-06-01",
@@ -1475,6 +2126,85 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/dst_parquet')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "adls_dl",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"fileName": {
+						"type": "string",
+						"defaultValue": "customers.parquet"
+					}
+				},
+				"folder": {
+					"name": "HUB/Targets"
+				},
+				"annotations": [],
+				"type": "Parquet",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().fileName",
+							"type": "Expression"
+						},
+						"folderPath": "sales",
+						"fileSystem": "stage"
+					},
+					"compressionCodec": "snappy"
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/adls_dl')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/src_csv')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "adls_dl",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"fileName": {
+						"type": "string",
+						"defaultValue": "customers.csv"
+					}
+				},
+				"folder": {
+					"name": "HUB/Sources"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().fileName",
+							"type": "Expression"
+						},
+						"folderPath": "sales",
+						"fileSystem": "raw"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/adls_dl')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/SalesforceServiceCloud1')]",
 			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
@@ -1535,7 +2265,7 @@
 						},
 						"secretName": "dbricks"
 					},
-					"existingClusterId": "0729-082332-bulge583"
+					"existingClusterId": "0413-103852-skid687"
 				}
 			},
 			"dependsOn": [
@@ -1665,6 +2395,327 @@
 				"typeProperties": {}
 			},
 			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_entity_load')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Get Entity Metadata",
+						"type": "GetMetadata",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "src_csv",
+								"type": "DatasetReference",
+								"parameters": {
+									"fileName": {
+										"value": "@concat(toLower(pipeline().parameters.EntityName),'.csv')",
+										"type": "Expression"
+									}
+								}
+							},
+							"fieldList": [
+								"structure",
+								"itemName"
+							],
+							"storeSettings": {
+								"type": "AzureBlobFSReadSettings",
+								"enablePartitionDiscovery": false
+							},
+							"formatSettings": {
+								"type": "DelimitedTextReadSettings"
+							}
+						}
+					},
+					{
+						"name": "Validate Metadata",
+						"type": "AzureFunctionActivity",
+						"dependsOn": [
+							{
+								"activity": "Get Entity Metadata",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"functionName": "dataValidationApi",
+							"method": "POST",
+							"headers": {
+								"EntityName": {
+									"value": "@if(startswith(activity('Get Entity Metadata').output.itemName,'salesterritory'),'Sales Territory',if(startswith(activity('Get Entity Metadata').output.itemName,'customers'),'Customer','Order'))",
+									"type": "Expression"
+								}
+							},
+							"body": {
+								"value": "@replace(concat('[',join(activity('Get Entity Metadata').output.structure,','),']'),'\\','')",
+								"type": "Expression"
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ls_af_datavalidation",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "Check Validation Error",
+						"type": "IfCondition",
+						"dependsOn": [
+							{
+								"activity": "Validate Metadata",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"expression": {
+								"value": "@activity('Validate Metadata').output.Satus == 'Error'",
+								"type": "Expression"
+							},
+							"ifFalseActivities": [
+								{
+									"name": "Copy to Stage",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "DelimitedTextSource",
+											"storeSettings": {
+												"type": "AzureBlobFSReadSettings",
+												"recursive": true,
+												"enablePartitionDiscovery": false
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
+											}
+										},
+										"sink": {
+											"type": "ParquetSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "ParquetWriteSettings"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "src_csv",
+											"type": "DatasetReference",
+											"parameters": {
+												"fileName": {
+													"value": "@concat(toLower(pipeline().parameters.EntityName),'.csv')",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "dst_parquet",
+											"type": "DatasetReference",
+											"parameters": {
+												"fileName": {
+													"value": "@concat(toLower(pipeline().parameters.EntityName),'.parquet')",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								}
+							],
+							"ifTrueActivities": [
+								{
+									"name": "Log Error_copy1",
+									"type": "DatabricksNotebook",
+									"dependsOn": [
+										{
+											"activity": "Set Error variable_copy1",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"notebookPath": "/hub/logError",
+										"baseParameters": {
+											"ErrorMessage": {
+												"value": "@variables('loadError')",
+												"type": "Expression"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "adb_etl",
+										"type": "LinkedServiceReference"
+									}
+								},
+								{
+									"name": "Set Error variable_copy1",
+									"type": "SetVariable",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "loadError",
+										"value": {
+											"value": "@concat('{\"Entity\" :\"Sales.',pipeline().parameters.EntityName,'\"', '\"ErrorMessage\": \"',activity('Validate Metadata').output.Message,'\"}')",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					}
+				],
+				"parameters": {
+					"EntityName": {
+						"type": "string",
+						"defaultValue": "salesterritory"
+					}
+				},
+				"variables": {
+					"EntityMetadata": {
+						"type": "String"
+					},
+					"loadError": {
+						"type": "String"
+					}
+				},
+				"folder": {
+					"name": "HUB"
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/src_csv')]",
+				"[concat(variables('factoryId'), '/linkedServices/ls_af_datavalidation')]",
+				"[concat(variables('factoryId'), '/linkedServices/adb_etl')]",
+				"[concat(variables('factoryId'), '/datasets/dst_parquet')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ls_af_datavalidation')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureFunction",
+				"typeProperties": {
+					"functionAppUrl": "[parameters('ls_af_datavalidation_properties_typeProperties_functionAppUrl')]",
+					"functionKey": {
+						"type": "SecureString",
+						"value": "[parameters('ls_af_datavalidation_functionKey')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_sales_initialload')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Load Entities",
+						"type": "ForEach",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@variables('entities')",
+								"type": "Expression"
+							},
+							"isSequential": false,
+							"activities": [
+								{
+									"name": "Load Entity",
+									"type": "ExecutePipeline",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"pipeline": {
+											"referenceName": "pl_entity_load",
+											"type": "PipelineReference"
+										},
+										"waitOnCompletion": true,
+										"parameters": {
+											"EntityName": {
+												"value": "@item()",
+												"type": "Expression"
+											}
+										}
+									}
+								}
+							]
+						}
+					}
+				],
+				"variables": {
+					"entities": {
+						"type": "Array",
+						"defaultValue": [
+							"customers",
+							"salesterritory",
+							"orders"
+						]
+					}
+				},
+				"folder": {
+					"name": "HUB"
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/pl_entity_load')]"
+			]
 		}
 	]
 }

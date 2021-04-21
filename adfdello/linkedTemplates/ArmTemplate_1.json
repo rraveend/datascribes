@@ -13,6 +13,613 @@
 	},
 	"resources": [
 		{
+			"name": "[concat(parameters('factoryName'), '/ds_geneattrib_dest')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "mysqlcon",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "Destinations"
+				},
+				"annotations": [],
+				"type": "AzureMySqlTable",
+				"schema": [
+					{
+						"name": "gene_id",
+						"type": "int",
+						"precision": 0,
+						"scale": 0
+					},
+					{
+						"name": "attrib_type_id",
+						"type": "int",
+						"precision": 0,
+						"scale": 0
+					},
+					{
+						"name": "value",
+						"type": "text",
+						"precision": 0,
+						"scale": 0
+					}
+				],
+				"typeProperties": {
+					"tableName": "geneattrib"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_geneattrib_src')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "storageblob",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "Data sources"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": "geneattrib.csv",
+						"container": "tau"
+					},
+					"columnDelimiter": ";",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_mysql_src')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "mysqlcon",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"tableName": {
+						"type": "string",
+						"defaultValue": "gene"
+					}
+				},
+				"folder": {
+					"name": "Data sources"
+				},
+				"annotations": [
+					"azure mysql genome database"
+				],
+				"type": "AzureMySqlTable",
+				"schema": [],
+				"typeProperties": {
+					"tableName": {
+						"value": "@dataset().tableName",
+						"type": "Expression"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_entity_load')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Get Entity Metadata",
+						"type": "GetMetadata",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "src_csv",
+								"type": "DatasetReference",
+								"parameters": {
+									"fileName": {
+										"value": "@concat(toLower(pipeline().parameters.EntityName),'.csv')",
+										"type": "Expression"
+									}
+								}
+							},
+							"fieldList": [
+								"structure",
+								"itemName"
+							],
+							"storeSettings": {
+								"type": "AzureBlobFSReadSettings",
+								"enablePartitionDiscovery": false
+							},
+							"formatSettings": {
+								"type": "DelimitedTextReadSettings"
+							}
+						}
+					},
+					{
+						"name": "Validate Metadata",
+						"type": "AzureFunctionActivity",
+						"dependsOn": [
+							{
+								"activity": "Get Entity Metadata",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"functionName": "dataValidationApi",
+							"method": "POST",
+							"headers": {
+								"EntityName": {
+									"value": "@if(startswith(activity('Get Entity Metadata').output.itemName,'salesterritory'),'Sales Territory',if(startswith(activity('Get Entity Metadata').output.itemName,'customers'),'Customer','Order'))",
+									"type": "Expression"
+								}
+							},
+							"body": {
+								"value": "@replace(concat('[',join(activity('Get Entity Metadata').output.structure,','),']'),'\\','')",
+								"type": "Expression"
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ls_af_datavalidation",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "Check Validation Error",
+						"type": "IfCondition",
+						"dependsOn": [
+							{
+								"activity": "Validate Metadata",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"expression": {
+								"value": "@activity('Validate Metadata').output.Satus == 'Error'",
+								"type": "Expression"
+							},
+							"ifFalseActivities": [
+								{
+									"name": "Copy to Stage",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "DelimitedTextSource",
+											"storeSettings": {
+												"type": "AzureBlobFSReadSettings",
+												"recursive": true,
+												"enablePartitionDiscovery": false
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
+											}
+										},
+										"sink": {
+											"type": "ParquetSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "ParquetWriteSettings"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "src_csv",
+											"type": "DatasetReference",
+											"parameters": {
+												"fileName": {
+													"value": "@concat(toLower(pipeline().parameters.EntityName),'.csv')",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "dst_parquet",
+											"type": "DatasetReference",
+											"parameters": {
+												"fileName": {
+													"value": "@concat(toLower(pipeline().parameters.EntityName),'.parquet')",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								}
+							],
+							"ifTrueActivities": [
+								{
+									"name": "Log Error_copy1",
+									"type": "DatabricksNotebook",
+									"dependsOn": [
+										{
+											"activity": "Set Error variable_copy1",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"notebookPath": "/hub/logError",
+										"baseParameters": {
+											"ErrorMessage": {
+												"value": "@variables('loadError')",
+												"type": "Expression"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "adb_etl",
+										"type": "LinkedServiceReference"
+									}
+								},
+								{
+									"name": "Set Error variable_copy1",
+									"type": "SetVariable",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "loadError",
+										"value": {
+											"value": "@concat('{\"Entity\" :\"Sales.',pipeline().parameters.EntityName,'\"', '\"ErrorMessage\": \"',activity('Validate Metadata').output.Message,'\"}')",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					}
+				],
+				"parameters": {
+					"EntityName": {
+						"type": "string",
+						"defaultValue": "salesterritory"
+					}
+				},
+				"variables": {
+					"EntityMetadata": {
+						"type": "String"
+					},
+					"loadError": {
+						"type": "String"
+					}
+				},
+				"folder": {
+					"name": "HUB"
+				},
+				"annotations": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_genome_orchestration')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "cp_extractdata_gene",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [
+							{
+								"name": "EntityName",
+								"value": "gene"
+							}
+						],
+						"typeProperties": {
+							"source": {
+								"type": "AzureMySqlSource",
+								"queryTimeout": "02:00:00"
+							},
+							"sink": {
+								"type": "ParquetSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "ds_mysql_src",
+								"type": "DatasetReference",
+								"parameters": {
+									"tableName": "gene"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "ds_parq_raw",
+								"type": "DatasetReference",
+								"parameters": {
+									"year": "2020",
+									"month": "08",
+									"day": "28",
+									"entityName": "gene"
+								}
+							}
+						]
+					},
+					{
+						"name": "cp_extractdata_biotype",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [
+							{
+								"name": "EntityName",
+								"value": "biotype"
+							}
+						],
+						"typeProperties": {
+							"source": {
+								"type": "AzureMySqlSource",
+								"queryTimeout": "02:00:00"
+							},
+							"sink": {
+								"type": "ParquetSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "ds_mysql_src",
+								"type": "DatasetReference",
+								"parameters": {
+									"tableName": "biotype"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "ds_parq_raw",
+								"type": "DatasetReference",
+								"parameters": {
+									"year": "2020",
+									"month": "08",
+									"day": "28",
+									"entityName": "biotype"
+								}
+							}
+						]
+					},
+					{
+						"name": "cp_extractdata_geneattrib",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [
+							{
+								"name": "EntityName",
+								"value": "geneattrib"
+							}
+						],
+						"typeProperties": {
+							"source": {
+								"type": "AzureMySqlSource",
+								"queryTimeout": "02:00:00"
+							},
+							"sink": {
+								"type": "ParquetSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "ds_mysql_src",
+								"type": "DatasetReference",
+								"parameters": {
+									"tableName": "geneattrib"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "ds_parq_raw",
+								"type": "DatasetReference",
+								"parameters": {
+									"year": "2020",
+									"month": "08",
+									"day": "28",
+									"entityName": "geneattrib"
+								}
+							}
+						]
+					},
+					{
+						"name": "adb_kitchen",
+						"description": "store genome datasets into Hive tables ",
+						"type": "DatabricksNotebook",
+						"dependsOn": [
+							{
+								"activity": "cp_extractdata_gene",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "cp_extractdata_geneattrib",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "cp_extractdata_biotype",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Genome/KitchenLayer"
+						},
+						"linkedServiceName": {
+							"referenceName": "adb_etl",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "adb_servinglayer",
+						"description": "Transform data into Data Lake in a dimensional model for serving from Power BI",
+						"type": "DatabricksNotebook",
+						"dependsOn": [
+							{
+								"activity": "adb_kitchen",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Genome/KitchenLayer"
+						},
+						"linkedServiceName": {
+							"referenceName": "adb_etl",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"concurrency": 1,
+				"annotations": [],
+				"lastPublishTime": "2020-08-28T08:49:32Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/ds_mysql_src')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/pl_genome_orchestration_DQ')]",
 			"type": "Microsoft.DataFactory/factories/pipelines",
 			"apiVersion": "2018-06-01",
@@ -423,7 +1030,9 @@
 				"annotations": [],
 				"lastPublishTime": "2021-04-13T11:02:45Z"
 			},
-			"dependsOn": []
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/ds_mysql_src')]"
+			]
 		},
 		{
 			"name": "[concat(parameters('factoryName'), '/pl_loaddatatodb')]",
@@ -773,7 +1382,70 @@
 				"annotations": [],
 				"lastPublishTime": "2020-08-27T12:31:34Z"
 			},
-			"dependsOn": []
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/ds_geneattrib_src')]",
+				"[concat(variables('factoryId'), '/datasets/ds_geneattrib_dest')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_sales_initialload')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Load Entities",
+						"type": "ForEach",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@variables('entities')",
+								"type": "Expression"
+							},
+							"isSequential": false,
+							"activities": [
+								{
+									"name": "Load Entity",
+									"type": "ExecutePipeline",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"pipeline": {
+											"referenceName": "pl_entity_load",
+											"type": "PipelineReference"
+										},
+										"waitOnCompletion": true,
+										"parameters": {
+											"EntityName": {
+												"value": "@item()",
+												"type": "Expression"
+											}
+										}
+									}
+								}
+							]
+						}
+					}
+				],
+				"variables": {
+					"entities": {
+						"type": "Array",
+						"defaultValue": [
+							"customers",
+							"salesterritory",
+							"orders"
+						]
+					}
+				},
+				"folder": {
+					"name": "HUB"
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/pl_entity_load')]"
+			]
 		}
 	]
 }

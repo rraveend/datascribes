@@ -23,6 +23,9 @@
 		"sqlDB_connectionString": {
 			"value": ""
 		},
+		"ls_af_datavalidation_functionKey": {
+			"value": ""
+		},
 		"SalesforceServiceCloud1_properties_typeProperties_environmentUrl": {
 			"value": "https://tau-ac--pardot.my.salesforce.com/"
 		},
@@ -43,6 +46,9 @@
 		},
 		"storageblob_properties_typeProperties_sasUri_secretName": {
 			"value": "blobsas"
+		},
+		"ls_af_datavalidation_properties_typeProperties_functionAppUrl": {
+			"value": "https://datavalidationfa.azurewebsites.net"
 		},
 		"containerUri": {
 			"value": ""
