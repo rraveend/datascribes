@@ -62,7 +62,7 @@
 					"method": "POST",
 					"headers": {
 						"EntityName": {
-							"value": "@if(startswith(activity('Get Entity Metadata').output.itemName,'salesterritory'),'Sales Territory','Customer')",
+							"value": "@if(startswith(activity('Get Entity Metadata').output.itemName,'salesterritory'),'Sales Territory',if(startswith(activity('Get Entity Metadata').output.itemName,'customers'),'Customer','Order'))",
 							"type": "Expression"
 						}
 					},
