@@ -64,7 +64,7 @@
 						}
 					},
 					"body": {
-						"value": "@concat('[',join(activity('Get Territory Metadata').output.structure,','),']')",
+						"value": "@replace(concat('[',join(activity('Get Territory Metadata').output.structure,','),']'),'\\','')",
 						"type": "Expression"
 					}
 				},
