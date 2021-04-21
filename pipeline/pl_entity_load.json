@@ -64,7 +64,7 @@
 						}
 					},
 					"body": {
-						"value": "@activity('Get Territory Metadata').output.structure",
+						"value": "@join(activity('Get Territory Metadata').output.structure,',')",
 						"type": "Expression"
 					}
 				},
