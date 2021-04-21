@@ -199,7 +199,7 @@
 				"typeProperties": {
 					"variableName": "loadError",
 					"value": {
-						"value": "@concat('{\"Entity\" :\"Sales.',pipeline().parameters.EntityName,'\"', '\"ErrorMessage\": \"',activity('Validate Metadata').output.errors[0].Message,'\"}')",
+						"value": "@concat('{\"Entity\" :\"Sales.',pipeline().parameters.EntityName,'\"', '\"ErrorMessage\": \"',activity('Validate Metadata').output.Message,'\"}')",
 						"type": "Expression"
 					}
 				}
