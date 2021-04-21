@@ -165,11 +165,11 @@
 					],
 					"ifTrueActivities": [
 						{
-							"name": "Log Error_copy1",
+							"name": "Log Error",
 							"type": "DatabricksNotebook",
 							"dependsOn": [
 								{
-									"activity": "Set Error variable_copy1",
+									"activity": "Set Error variable",
 									"dependencyConditions": [
 										"Succeeded"
 									]
@@ -198,7 +198,7 @@
 							}
 						},
 						{
-							"name": "Set Error variable_copy1",
+							"name": "Set Error variable",
 							"type": "SetVariable",
 							"dependsOn": [],
 							"userProperties": [],
