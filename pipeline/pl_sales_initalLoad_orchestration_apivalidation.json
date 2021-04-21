@@ -40,7 +40,7 @@
 				"type": "AzureFunctionActivity",
 				"dependsOn": [
 					{
-						"activity": "Append variable2",
+						"activity": "Set Metadata Variable",
 						"dependencyConditions": [
 							"Succeeded"
 						]
@@ -68,8 +68,8 @@
 				}
 			},
 			{
-				"name": "Append variable1",
-				"type": "AppendVariable",
+				"name": "Set Metadata Variable",
+				"type": "SetVariable",
 				"dependsOn": [
 					{
 						"activity": "Get Territory Metadata",
@@ -80,29 +80,9 @@
 				],
 				"userProperties": [],
 				"typeProperties": {
-					"variableName": "TerritoryMetadata",
+					"variableName": "EntityMetadata",
 					"value": {
-						"value": "@activity('Get Territory Metadata').output.itemName",
-						"type": "Expression"
-					}
-				}
-			},
-			{
-				"name": "Append variable2",
-				"type": "AppendVariable",
-				"dependsOn": [
-					{
-						"activity": "Append variable1",
-						"dependencyConditions": [
-							"Succeeded"
-						]
-					}
-				],
-				"userProperties": [],
-				"typeProperties": {
-					"variableName": "TerritoryMetadata",
-					"value": {
-						"value": "@activity('Get Territory Metadata').output.structure",
+						"value": "@concat('{\"EntityName\":\"',activity('Get Territory Metadata').output.itemName,'\",\"value\":[',activity('Get Territory Metadata').output.structure,']')",
 						"type": "Expression"
 					}
 				}
@@ -111,6 +91,9 @@
 		"variables": {
 			"TerritoryMetadata": {
 				"type": "Array"
+			},
+			"EntityMetadata": {
+				"type": "String"
 			}
 		},
 		"folder": {
