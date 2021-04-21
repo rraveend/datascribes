@@ -77,8 +77,8 @@
 				}
 			},
 			{
-				"name": "Copy to Stage",
-				"type": "Copy",
+				"name": "Check Validation Error",
+				"type": "IfCondition",
 				"dependsOn": [
 					{
 						"activity": "Validate Metadata",
@@ -87,121 +87,130 @@
 						]
 					}
 				],
-				"policy": {
-					"timeout": "7.00:00:00",
-					"retry": 0,
-					"retryIntervalInSeconds": 30,
-					"secureOutput": false,
-					"secureInput": false
-				},
 				"userProperties": [],
 				"typeProperties": {
-					"source": {
-						"type": "DelimitedTextSource",
-						"storeSettings": {
-							"type": "AzureBlobFSReadSettings",
-							"recursive": true,
-							"enablePartitionDiscovery": false
-						},
-						"formatSettings": {
-							"type": "DelimitedTextReadSettings"
-						}
-					},
-					"sink": {
-						"type": "ParquetSink",
-						"storeSettings": {
-							"type": "AzureBlobFSWriteSettings"
-						},
-						"formatSettings": {
-							"type": "ParquetWriteSettings"
-						}
-					},
-					"enableStaging": false,
-					"translator": {
-						"type": "TabularTranslator",
-						"typeConversion": true,
-						"typeConversionSettings": {
-							"allowDataTruncation": true,
-							"treatBooleanAsNumber": false
-						}
-					}
-				},
-				"inputs": [
-					{
-						"referenceName": "src_csv",
-						"type": "DatasetReference",
-						"parameters": {
-							"fileName": {
-								"value": "@concat(toLower(pipeline().parameters.EntityName),'.csv')",
-								"type": "Expression"
-							}
-						}
-					}
-				],
-				"outputs": [
-					{
-						"referenceName": "dst_parquet",
-						"type": "DatasetReference",
-						"parameters": {
-							"fileName": {
-								"value": "@concat(toLower(pipeline().parameters.EntityName),'.parquet')",
-								"type": "Expression"
-							}
-						}
-					}
-				]
-			},
-			{
-				"name": "Log Error",
-				"type": "DatabricksNotebook",
-				"dependsOn": [
-					{
-						"activity": "Set Error variable",
-						"dependencyConditions": [
-							"Succeeded"
-						]
-					}
-				],
-				"policy": {
-					"timeout": "7.00:00:00",
-					"retry": 0,
-					"retryIntervalInSeconds": 30,
-					"secureOutput": false,
-					"secureInput": false
-				},
-				"userProperties": [],
-				"typeProperties": {
-					"notebookPath": "/hub/logError",
-					"baseParameters": {
-						"ErrorMessage": {
-							"value": "@variables('loadError')",
-							"type": "Expression"
-						}
-					}
-				},
-				"linkedServiceName": {
-					"referenceName": "adb_etl",
-					"type": "LinkedServiceReference"
-				}
-			},
-			{
-				"name": "Set Error variable",
-				"type": "SetVariable",
-				"dependsOn": [
-					{
-						"activity": "Validate Metadata",
-						"dependencyConditions": [
-							"Failed"
-						]
-					}
-				],
-				"userProperties": [],
-				"typeProperties": {
-					"variableName": "loadError",
-					"value": {
-						"value": "@concat('{\"Entity\" :\"Sales.',pipeline().parameters.EntityName,'\"', '\"ErrorMessage\": \"',activity('Validate Metadata').output.Details,'\"}')",
+					"expression": {
+						"value": "@activity('Validate Metadata').output.Satus == 'Error'",
 						"type": "Expression"
-					}
+					},
+					"ifFalseActivities": [
+						{
+							"name": "Copy to Stage",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "DelimitedTextSource",
+									"storeSettings": {
+										"type": "AzureBlobFSReadSettings",
+										"recursive": true,
+										"enablePartitionDiscovery": false
+									},
+									"formatSettings": {
+										"type": "DelimitedTextReadSettings"
+									}
+								},
+								"sink": {
+									"type": "ParquetSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									},
+									"formatSettings": {
+										"type": "ParquetWriteSettings"
+									}
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "src_csv",
+									"type": "DatasetReference",
+									"parameters": {
+										"fileName": {
+											"value": "@concat(toLower(pipeline().parameters.EntityName),'.csv')",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "dst_parquet",
+									"type": "DatasetReference",
+									"parameters": {
+										"fileName": {
+											"value": "@concat(toLower(pipeline().parameters.EntityName),'.parquet')",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					],
+					"ifTrueActivities": [
+						{
+							"name": "Log Error_copy1",
+							"type": "DatabricksNotebook",
+							"dependsOn": [
+								{
+									"activity": "Set Error variable_copy1",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": "/hub/logError",
+								"baseParameters": {
+									"ErrorMessage": {
+										"value": "@variables('loadError')",
+										"type": "Expression"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "adb_etl",
+								"type": "LinkedServiceReference"
+							}
+						},
+						{
+							"name": "Set Error variable_copy1",
+							"type": "SetVariable",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "loadError",
+								"value": {
+									"value": "@concat('{\"Entity\" :\"Sales.',pipeline().parameters.EntityName,'\"', '\"ErrorMessage\": \"',activity('Validate Metadata').output.Message,'\"}')",
+									"type": "Expression"
+								}
+							}
+						}
+					]
 				}
 			}
 		],
