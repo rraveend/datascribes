@@ -19,7 +19,7 @@
 						"referenceName": "src_csv",
 						"type": "DatasetReference",
 						"parameters": {
-							"fileName": "customers.csv"
+							"fileName": "salesterritory.csv"
 						}
 					},
 					"fieldList": [
