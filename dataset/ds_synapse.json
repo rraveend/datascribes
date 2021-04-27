@@ -7,7 +7,12 @@
 		},
 		"parameters": {
 			"EntityName": {
-				"type": "string"
+				"type": "string",
+				"defaultValue": "DimCustomer"
+			},
+			"Schema": {
+				"type": "string",
+				"defaultValue": "Sales"
 			}
 		},
 		"folder": {
@@ -17,8 +22,14 @@
 		"type": "AzureSqlDWTable",
 		"schema": [],
 		"typeProperties": {
-			"schema": "Sales",
-			"table": "DimCustomer"
+			"schema": {
+				"value": "@dataset().Schema",
+				"type": "Expression"
+			},
+			"table": {
+				"value": "@dataset().EntityName",
+				"type": "Expression"
+			}
 		}
 	}
 }
