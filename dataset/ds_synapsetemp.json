@@ -1,0 +1,22 @@
+{
+	"name": "ds_synapsetemp",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_storage",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "HUB"
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"container": "synapsetemp"
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": []
+	}
+}
