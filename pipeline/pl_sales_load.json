@@ -1,0 +1,99 @@
+{
+	"name": "pl_sales_load",
+	"properties": {
+		"activities": [
+			{
+				"name": "Load Entities",
+				"type": "ForEach",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@variables('entities')",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"activities": [
+						{
+							"name": "Load Entity",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "pl_entity_load",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"EntityName": {
+										"value": "@item()",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "Data Quality Check",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Load Entities",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"activities": [
+						{
+							"name": "Data Quality Checks",
+							"type": "DatabricksNotebook",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": "/hub/DQEngine",
+								"baseParameters": {
+									"Entity": {
+										"value": "@item()",
+										"type": "Expression"
+									},
+									"ProcessType": "batch"
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "adb_etl",
+								"type": "LinkedServiceReference"
+							}
+						}
+					]
+				}
+			}
+		],
+		"variables": {
+			"entities": {
+				"type": "Array",
+				"defaultValue": [
+					"customers",
+					"salesterritory",
+					"orders"
+				]
+			}
+		},
+		"folder": {
+			"name": "HUB"
+		},
+		"annotations": []
+	}
+}
