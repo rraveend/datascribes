@@ -1,0 +1,882 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "adfdello"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_entity_load')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Get Entity Metadata",
+						"type": "GetMetadata",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "src_csv",
+								"type": "DatasetReference",
+								"parameters": {
+									"fileName": {
+										"value": "@concat(toLower(pipeline().parameters.EntityName),'.csv')",
+										"type": "Expression"
+									}
+								}
+							},
+							"fieldList": [
+								"structure",
+								"itemName"
+							],
+							"storeSettings": {
+								"type": "AzureBlobFSReadSettings",
+								"recursive": true,
+								"enablePartitionDiscovery": false
+							},
+							"formatSettings": {
+								"type": "DelimitedTextReadSettings"
+							}
+						}
+					},
+					{
+						"name": "Validate Metadata",
+						"type": "AzureFunctionActivity",
+						"dependsOn": [
+							{
+								"activity": "Get Entity Metadata",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"functionName": "dataValidationApi",
+							"method": "POST",
+							"headers": {
+								"EntityName": {
+									"value": "@if(startswith(activity('Get Entity Metadata').output.itemName,'salesterritory'),'Sales Territory',if(startswith(activity('Get Entity Metadata').output.itemName,'customers'),'Customer','Order'))",
+									"type": "Expression"
+								}
+							},
+							"body": {
+								"value": "@replace(concat('[',join(activity('Get Entity Metadata').output.structure,','),']'),'\\','')",
+								"type": "Expression"
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ls_af_datavalidation",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "Check Validation Error",
+						"type": "IfCondition",
+						"dependsOn": [
+							{
+								"activity": "Validate Metadata",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"expression": {
+								"value": "@equals(activity('Validate Metadata').output.Status , 'Error')",
+								"type": "Expression"
+							},
+							"ifFalseActivities": [
+								{
+									"name": "Copy to Stage",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "DelimitedTextSource",
+											"storeSettings": {
+												"type": "AzureBlobFSReadSettings",
+												"recursive": true,
+												"enablePartitionDiscovery": false
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
+											}
+										},
+										"sink": {
+											"type": "ParquetSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "ParquetWriteSettings"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "src_csv",
+											"type": "DatasetReference",
+											"parameters": {
+												"fileName": {
+													"value": "@concat(toLower(pipeline().parameters.EntityName),'.csv')",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "dst_parquet",
+											"type": "DatasetReference",
+											"parameters": {
+												"fileName": {
+													"value": "@concat(toLower(pipeline().parameters.EntityName),'.parquet')",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								}
+							],
+							"ifTrueActivities": [
+								{
+									"name": "Log Error",
+									"type": "DatabricksNotebook",
+									"dependsOn": [
+										{
+											"activity": "Set Error variable",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"notebookPath": "/hub/logError",
+										"baseParameters": {
+											"ErrorMessage": {
+												"value": "@variables('loadError')",
+												"type": "Expression"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "adb_etl",
+										"type": "LinkedServiceReference"
+									}
+								},
+								{
+									"name": "Set Error variable",
+									"type": "SetVariable",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "loadError",
+										"value": {
+											"value": "@concat('{\"Entity\" :\"Sales.',pipeline().parameters.EntityName,'\",', '\"ErrorMessage\": \"',activity('Validate Metadata').output.Message,'\"}')",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					}
+				],
+				"parameters": {
+					"EntityName": {
+						"type": "string",
+						"defaultValue": "salesterritory"
+					}
+				},
+				"variables": {
+					"EntityMetadata": {
+						"type": "String"
+					},
+					"loadError": {
+						"type": "String"
+					}
+				},
+				"folder": {
+					"name": "HUB"
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/adb_etl')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_sales_load')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Load Entities",
+						"type": "ForEach",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@variables('entities')",
+								"type": "Expression"
+							},
+							"isSequential": false,
+							"activities": [
+								{
+									"name": "Load Entity",
+									"type": "ExecutePipeline",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"pipeline": {
+											"referenceName": "pl_entity_load",
+											"type": "PipelineReference"
+										},
+										"waitOnCompletion": true,
+										"parameters": {
+											"EntityName": {
+												"value": "@item()",
+												"type": "Expression"
+											}
+										}
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "Data Quality Check",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Load Entities",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@variables('entities')",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "Data Quality Checks",
+									"type": "DatabricksNotebook",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"notebookPath": "/hub/DQEngine",
+										"baseParameters": {
+											"Entity": {
+												"value": "@item()",
+												"type": "Expression"
+											},
+											"ProcessType": "batch"
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "adb_etl",
+										"type": "LinkedServiceReference"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "Load To DW",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Data Quality Check",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@variables('entities')",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "Load Entity to Interim Storage",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureDatabricksDeltaLakeSource",
+											"exportSettings": {
+												"type": "AzureDatabricksDeltaLakeExportCommand"
+											}
+										},
+										"sink": {
+											"type": "ParquetSink",
+											"storeSettings": {
+												"type": "AzureBlobStorageWriteSettings"
+											},
+											"formatSettings": {
+												"type": "ParquetWriteSettings"
+											}
+										},
+										"enableStaging": false
+									},
+									"inputs": [
+										{
+											"referenceName": "ds_deltalake",
+											"type": "DatasetReference",
+											"parameters": {
+												"EntityName": {
+													"value": "@if(equals(item(),'customers'),'curated.Customer',if(equals(item(),'salesterritory'),'curated.SalesTerritory','curated.Order'))",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ds_synapsetemp",
+											"type": "DatasetReference"
+										}
+									]
+								},
+								{
+									"name": "Load to DW",
+									"type": "Copy",
+									"dependsOn": [
+										{
+											"activity": "Load Entity to Interim Storage",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "ParquetSource",
+											"storeSettings": {
+												"type": "AzureBlobStorageReadSettings",
+												"recursive": true,
+												"wildcardFileName": "*.parquet",
+												"enablePartitionDiscovery": false
+											}
+										},
+										"sink": {
+											"type": "SqlDWSink"
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "ds_synapsetemp",
+											"type": "DatasetReference"
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ds_synapse",
+											"type": "DatasetReference",
+											"parameters": {
+												"EntityName": {
+													"value": "@if(equals(item(),'customers'),'Sales.DimCustomer',if(equals(item(),'salesterritory'),'Sales.SalesTerritory','Sales.FactOrder'))",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								},
+								{
+									"name": "Delete Temp File",
+									"type": "Delete",
+									"dependsOn": [
+										{
+											"activity": "Load to DW",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"dataset": {
+											"referenceName": "ds_synapsetemp",
+											"type": "DatasetReference"
+										},
+										"enableLogging": false,
+										"storeSettings": {
+											"type": "AzureBlobStorageReadSettings",
+											"recursive": true,
+											"enablePartitionDiscovery": false
+										}
+									}
+								}
+							]
+						}
+					}
+				],
+				"variables": {
+					"entities": {
+						"type": "Array",
+						"defaultValue": [
+							"customers",
+							"salesterritory",
+							"orders"
+						]
+					}
+				},
+				"folder": {
+					"name": "HUB"
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/pl_entity_load')]",
+				"[concat(variables('factoryId'), '/linkedServices/adb_etl')]",
+				"[concat(variables('factoryId'), '/datasets/ds_deltalake')]",
+				"[concat(variables('factoryId'), '/datasets/ds_synapsetemp')]",
+				"[concat(variables('factoryId'), '/datasets/ds_synapse')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_sales_load_copy1')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Load Entities",
+						"type": "ForEach",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@variables('entities')",
+								"type": "Expression"
+							},
+							"isSequential": false,
+							"activities": [
+								{
+									"name": "Load Entity",
+									"type": "ExecutePipeline",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"pipeline": {
+											"referenceName": "pl_entity_load",
+											"type": "PipelineReference"
+										},
+										"waitOnCompletion": true,
+										"parameters": {
+											"EntityName": {
+												"value": "@item()",
+												"type": "Expression"
+											}
+										}
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "Data Quality Check",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Load Entities",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@variables('entities')",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "Data Quality Checks",
+									"type": "DatabricksNotebook",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"notebookPath": "/hub/DQEngine",
+										"baseParameters": {
+											"Entity": {
+												"value": "@item()",
+												"type": "Expression"
+											},
+											"ProcessType": "batch"
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "adb_etl",
+										"type": "LinkedServiceReference"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "Load To DW",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Data Quality Check",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@variables('entities')",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "Load Entity to DW",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureDatabricksDeltaLakeSource",
+											"exportSettings": {
+												"type": "AzureDatabricksDeltaLakeExportCommand"
+											}
+										},
+										"sink": {
+											"type": "SqlDWSink"
+										},
+										"enableStaging": true,
+										"stagingSettings": {
+											"linkedServiceName": {
+												"referenceName": "ls_storage",
+												"type": "LinkedServiceReference"
+											},
+											"path": ""
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "ds_deltalake",
+											"type": "DatasetReference",
+											"parameters": {
+												"EntityName": {
+													"value": "@if(equals(item(),'customers'),'curated.Customer',if(equals(item(),'salesterritory'),'curated.SalesTerritory','curated.Order'))",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ds_synapse",
+											"type": "DatasetReference",
+											"parameters": {
+												"EntityName": {
+													"value": "@if(equals(item(),'customers'),'Sales.DimCustomer',if(equals(item(),'salesterritory'),'Sales.SalesTerritory','Sales.FactOrder'))",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"variables": {
+					"entities": {
+						"type": "Array",
+						"defaultValue": [
+							"customers",
+							"salesterritory",
+							"orders"
+						]
+					}
+				},
+				"folder": {
+					"name": "HUB"
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/pl_entity_load')]",
+				"[concat(variables('factoryId'), '/linkedServices/adb_etl')]",
+				"[concat(variables('factoryId'), '/datasets/ds_deltalake')]",
+				"[concat(variables('factoryId'), '/datasets/ds_synapse')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_deltalake')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_deltalake",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"EntityName": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "HUB/Sources"
+				},
+				"annotations": [],
+				"type": "AzureDatabricksDeltaLakeDataset",
+				"typeProperties": {
+					"database": "curated",
+					"table": "customer"
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_deltalake')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_deltalake_parquet')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "adls_dl",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"EntityName": {
+						"type": "string",
+						"defaultValue": "customer"
+					}
+				},
+				"folder": {
+					"name": "HUB/Targets"
+				},
+				"annotations": [],
+				"type": "Parquet",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().EntityName",
+							"type": "Expression"
+						},
+						"folderPath": "dwload",
+						"fileSystem": "curated"
+					},
+					"compressionCodec": "snappy"
+				},
+				"schema": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_synapse')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_synapsehub",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"EntityName": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "HUB/Targets"
+				},
+				"annotations": [],
+				"type": "AzureSqlDWTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "Sales",
+					"table": "DimCustomer"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/adb_etl')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureDatabricks",
+				"typeProperties": {
+					"domain": "https://adb-4979278838401978.18.azuredatabricks.net",
+					"accessToken": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "akv_global",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "dbricks"
+					},
+					"existingClusterId": "0426-064339-opal611"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ls_deltalake')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureDatabricksDeltaLake",
+				"typeProperties": {
+					"domain": "https://adb-4979278838401978.18.azuredatabricks.net",
+					"clusterId": "0426-064339-opal611",
+					"accessToken": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "akv_global",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "dbricks"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_synapsetemp')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_storage",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "HUB"
+				},
+				"annotations": [],
+				"type": "Parquet",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"container": "synapsetemp"
+					},
+					"compressionCodec": "snappy"
+				},
+				"schema": []
+			},
+			"dependsOn": []
+		}
+	]
+}

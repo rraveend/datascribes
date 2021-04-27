@@ -17,13 +17,19 @@
 		"SalesforceServiceCloud2_securityToken": {
 			"value": ""
 		},
+		"ls_af_datavalidation_functionKey": {
+			"value": ""
+		},
+		"ls_storage_connectionString": {
+			"value": ""
+		},
+		"ls_synapsehub_connectionString": {
+			"value": ""
+		},
 		"mysqlcon_connectionString": {
 			"value": ""
 		},
 		"sqlDB_connectionString": {
-			"value": ""
-		},
-		"ls_af_datavalidation_functionKey": {
 			"value": ""
 		},
 		"SalesforceServiceCloud1_properties_typeProperties_environmentUrl": {
@@ -44,11 +50,11 @@
 		"akv_global_properties_typeProperties_baseUrl": {
 			"value": "https://rituvault.vault.azure.net/"
 		},
-		"storageblob_properties_typeProperties_sasUri_secretName": {
-			"value": "blobsas"
-		},
 		"ls_af_datavalidation_properties_typeProperties_functionAppUrl": {
 			"value": "https://datavalidationfa.azurewebsites.net"
+		},
+		"storageblob_properties_typeProperties_sasUri_secretName": {
+			"value": "blobsas"
 		}
 	}
 }

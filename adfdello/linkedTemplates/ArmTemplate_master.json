@@ -23,6 +23,18 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'securityToken' of 'SalesforceServiceCloud2'"
 		},
+		"ls_af_datavalidation_functionKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'functionKey' of 'ls_af_datavalidation'"
+		},
+		"ls_storage_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'ls_storage'"
+		},
+		"ls_synapsehub_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'ls_synapsehub'"
+		},
 		"mysqlcon_connectionString": {
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'mysqlcon'"
@@ -30,10 +42,6 @@
 		"sqlDB_connectionString": {
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'sqlDB'"
-		},
-		"ls_af_datavalidation_functionKey": {
-			"type": "secureString",
-			"metadata": "Secure string for 'functionKey' of 'ls_af_datavalidation'"
 		},
 		"SalesforceServiceCloud1_properties_typeProperties_environmentUrl": {
 			"type": "string",
@@ -59,13 +67,13 @@
 			"type": "string",
 			"defaultValue": "https://rituvault.vault.azure.net/"
 		},
-		"storageblob_properties_typeProperties_sasUri_secretName": {
-			"type": "string",
-			"defaultValue": "blobsas"
-		},
 		"ls_af_datavalidation_properties_typeProperties_functionAppUrl": {
 			"type": "string",
 			"defaultValue": "https://datavalidationfa.azurewebsites.net"
+		},
+		"storageblob_properties_typeProperties_sasUri_secretName": {
+			"type": "string",
+			"defaultValue": "blobsas"
 		},
 		"containerUri": {
 			"type": "string",
@@ -109,6 +117,12 @@
 					"ls_af_datavalidation_functionKey": {
 						"value": "[parameters('ls_af_datavalidation_functionKey')]"
 					},
+					"ls_storage_connectionString": {
+						"value": "[parameters('ls_storage_connectionString')]"
+					},
+					"ls_synapsehub_connectionString": {
+						"value": "[parameters('ls_synapsehub_connectionString')]"
+					},
 					"mysqlcon_connectionString": {
 						"value": "[parameters('mysqlcon_connectionString')]"
 					},
@@ -135,9 +149,6 @@
 					},
 					"ls_af_datavalidation_properties_typeProperties_functionAppUrl": {
 						"value": "[parameters('ls_af_datavalidation_properties_typeProperties_functionAppUrl')]"
-					},
-					"storageblob_properties_typeProperties_sasUri_secretName": {
-						"value": "[parameters('storageblob_properties_typeProperties_sasUri_secretName')]"
 					}
 				}
 			},
@@ -156,6 +167,9 @@
 				"parameters": {
 					"factoryName": {
 						"value": "[parameters('factoryName')]"
+					},
+					"storageblob_properties_typeProperties_sasUri_secretName": {
+						"value": "[parameters('storageblob_properties_typeProperties_sasUri_secretName')]"
 					}
 				}
 			},

@@ -6,6 +6,10 @@
 			"type": "string",
 			"metadata": "Data Factory name",
 			"defaultValue": "adfdello"
+		},
+		"storageblob_properties_typeProperties_sasUri_secretName": {
+			"type": "string",
+			"defaultValue": "blobsas"
 		}
 	},
 	"variables": {
@@ -13,107 +17,47 @@
 	},
 	"resources": [
 		{
-			"name": "[concat(parameters('factoryName'), '/ds_geneattrib_dest')]",
-			"type": "Microsoft.DataFactory/factories/datasets",
+			"name": "[concat(parameters('factoryName'), '/storageblob')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
 			"properties": {
-				"linkedServiceName": {
-					"referenceName": "mysqlcon",
-					"type": "LinkedServiceReference"
-				},
-				"folder": {
-					"name": "Destinations"
-				},
 				"annotations": [],
-				"type": "AzureMySqlTable",
-				"schema": [
-					{
-						"name": "gene_id",
-						"type": "int",
-						"precision": 0,
-						"scale": 0
-					},
-					{
-						"name": "attrib_type_id",
-						"type": "int",
-						"precision": 0,
-						"scale": 0
-					},
-					{
-						"name": "value",
-						"type": "text",
-						"precision": 0,
-						"scale": 0
-					}
-				],
+				"type": "AzureBlobStorage",
 				"typeProperties": {
-					"tableName": "geneattrib"
+					"sasUri": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "akv_global",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "[parameters('storageblob_properties_typeProperties_sasUri_secretName')]"
+					}
 				}
 			},
 			"dependsOn": []
 		},
 		{
-			"name": "[concat(parameters('factoryName'), '/ds_geneattrib_src')]",
+			"name": "[concat(parameters('factoryName'), '/ds_synapsetemp')]",
 			"type": "Microsoft.DataFactory/factories/datasets",
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"linkedServiceName": {
-					"referenceName": "storageblob",
+					"referenceName": "ls_storage",
 					"type": "LinkedServiceReference"
 				},
 				"folder": {
-					"name": "Data sources"
+					"name": "HUB"
 				},
 				"annotations": [],
-				"type": "DelimitedText",
+				"type": "Parquet",
 				"typeProperties": {
 					"location": {
 						"type": "AzureBlobStorageLocation",
-						"fileName": "geneattrib.csv",
-						"container": "tau"
+						"container": "synapsetemp"
 					},
-					"columnDelimiter": ";",
-					"escapeChar": "\\",
-					"firstRowAsHeader": true,
-					"quoteChar": "\""
+					"compressionCodec": "snappy"
 				},
-				"schema": [
-					{
-						"type": "String"
-					}
-				]
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/ds_mysql_src')]",
-			"type": "Microsoft.DataFactory/factories/datasets",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"linkedServiceName": {
-					"referenceName": "mysqlcon",
-					"type": "LinkedServiceReference"
-				},
-				"parameters": {
-					"tableName": {
-						"type": "string",
-						"defaultValue": "gene"
-					}
-				},
-				"folder": {
-					"name": "Data sources"
-				},
-				"annotations": [
-					"azure mysql genome database"
-				],
-				"type": "AzureMySqlTable",
-				"schema": [],
-				"typeProperties": {
-					"tableName": {
-						"value": "@dataset().tableName",
-						"type": "Expression"
-					}
-				}
+				"schema": []
 			},
 			"dependsOn": []
 		},
@@ -152,6 +96,7 @@
 							],
 							"storeSettings": {
 								"type": "AzureBlobFSReadSettings",
+								"recursive": true,
 								"enablePartitionDiscovery": false
 							},
 							"formatSettings": {
@@ -211,7 +156,7 @@
 						"userProperties": [],
 						"typeProperties": {
 							"expression": {
-								"value": "@activity('Validate Metadata').output.Status = 'Error'",
+								"value": "@equals(activity('Validate Metadata').output.Status , 'Error')",
 								"type": "Expression"
 							},
 							"ifFalseActivities": [
@@ -286,11 +231,11 @@
 							],
 							"ifTrueActivities": [
 								{
-									"name": "Log Error_copy1",
+									"name": "Log Error",
 									"type": "DatabricksNotebook",
 									"dependsOn": [
 										{
-											"activity": "Set Error variable_copy1",
+											"activity": "Set Error variable",
 											"dependencyConditions": [
 												"Succeeded"
 											]
@@ -319,14 +264,14 @@
 									}
 								},
 								{
-									"name": "Set Error variable_copy1",
+									"name": "Set Error variable",
 									"type": "SetVariable",
 									"dependsOn": [],
 									"userProperties": [],
 									"typeProperties": {
 										"variableName": "loadError",
 										"value": {
-											"value": "@concat('{\"Entity\" :\"Sales.',pipeline().parameters.EntityName,'\"', '\"ErrorMessage\": \"',activity('Validate Metadata').output.Message,'\"}')",
+											"value": "@concat('{\"Entity\" :\"Sales.',pipeline().parameters.EntityName,'\",', '\"ErrorMessage\": \"',activity('Validate Metadata').output.Message,'\"}')",
 											"type": "Expression"
 										}
 									}
@@ -353,6 +298,861 @@
 					"name": "HUB"
 				},
 				"annotations": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_sales_initalLoad_orchestration')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "copy customers",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "ParquetSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "ParquetWriteSettings"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"name": "CustomerID",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "CustomerID",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "TerritoryID",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "TerritoryID",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "AccountNumber",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "AccountNumber",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "FirstName",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "FirstName",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "LastName",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "LastName",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "Title",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "Title",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "PhoneNumber",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "PhoneNumber",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "EmailAddress",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "EmailAddress",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									}
+								],
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "src_csv",
+								"type": "DatasetReference",
+								"parameters": {
+									"fileName": "customers.csv"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "dst_parquet",
+								"type": "DatasetReference",
+								"parameters": {
+									"fileName": "customers.parquet"
+								}
+							}
+						]
+					},
+					{
+						"name": "copy orders",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "ParquetSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "ParquetWriteSettings"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"name": "SalesOrderID",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "SalesOrderID",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "OrderDate",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "OrderDate",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "DueDate",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "DueDate",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "ShipDate",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "ShipDate",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "Status",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "Status",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "SalesOrderNumber",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "SalesOrderNumber",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "AccountNumber",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "AccountNumber",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "CustomerID",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "CustomerID",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "TerritoryID",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "TerritoryID",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "SubTotal",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "SubTotal",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "TaxAmt",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "TaxAmt",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "Freight",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "Freight",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "TotalDue",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "TotalDue",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									}
+								],
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "src_csv",
+								"type": "DatasetReference",
+								"parameters": {
+									"fileName": "orders.csv"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "dst_parquet",
+								"type": "DatasetReference",
+								"parameters": {
+									"fileName": "orders.parquet"
+								}
+							}
+						]
+					},
+					{
+						"name": "copy territory",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "ParquetSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "ParquetWriteSettings"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"name": "TerritoryID",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "TerritoryID",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "Name",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "Name",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "CountryRegionCode",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "CountryRegionCode",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "Group",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "Group",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "SalesYTD",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "SalesYTD",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "SalesLastYear",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "SalesLastYear",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "CostYTD",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "CostYTD",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "CostLastYear",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "CostLastYear",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "rowguid",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "rowguid",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									},
+									{
+										"source": {
+											"name": "ModifiedDate",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "ModifiedDate",
+											"type": "String",
+											"physicalType": "UTF8"
+										}
+									}
+								],
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "src_csv",
+								"type": "DatasetReference",
+								"parameters": {
+									"fileName": "salesterritory.csv"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "dst_parquet",
+								"type": "DatasetReference",
+								"parameters": {
+									"fileName": "salesterritory.parquet"
+								}
+							}
+						]
+					},
+					{
+						"name": "Set Error variable",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "copy territory",
+								"dependencyConditions": [
+									"Failed"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "loadError",
+							"value": {
+								"value": "@concat('{\"Entity\" :\"Sales.Territory\", \"ErrorMessage\": \"',activity('Copy territory').output.errors[0].Message,'\"}')",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "Log Error",
+						"type": "DatabricksNotebook",
+						"dependsOn": [
+							{
+								"activity": "Set Error variable",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/hub/logError",
+							"baseParameters": {
+								"ErrorMessage": {
+									"value": "@variables('loadError')",
+									"type": "Expression"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "adb_etl",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"variables": {
+					"loadErrorObject": {
+						"type": "Array"
+					},
+					"loadError": {
+						"type": "String"
+					}
+				},
+				"folder": {
+					"name": "HUB"
+				},
+				"annotations": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_stock_orchestration')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Validate Files are available",
+						"type": "Validation",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "ds_stock_src",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"timeout": "0.00:00:20",
+							"sleep": 10
+						}
+					}
+				],
+				"annotations": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_deltalake')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_deltalake",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"EntityName": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "HUB/Sources"
+				},
+				"annotations": [],
+				"type": "AzureDatabricksDeltaLakeDataset",
+				"typeProperties": {
+					"database": "curated",
+					"table": "customer"
+				},
+				"schema": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_gene_dest')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "mysqlcon",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "Destinations"
+				},
+				"annotations": [],
+				"type": "AzureMySqlTable",
+				"schema": [],
+				"typeProperties": {
+					"tableName": "gene"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_gene_src')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "storageblob",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "Data sources"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": "gene.csv",
+						"container": "tau"
+					},
+					"columnDelimiter": ";",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/storageblob')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_geneattrib_dest')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "mysqlcon",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "Destinations"
+				},
+				"annotations": [],
+				"type": "AzureMySqlTable",
+				"schema": [
+					{
+						"name": "gene_id",
+						"type": "int",
+						"precision": 0,
+						"scale": 0
+					},
+					{
+						"name": "attrib_type_id",
+						"type": "int",
+						"precision": 0,
+						"scale": 0
+					},
+					{
+						"name": "value",
+						"type": "text",
+						"precision": 0,
+						"scale": 0
+					}
+				],
+				"typeProperties": {
+					"tableName": "geneattrib"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_geneattrib_src')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "storageblob",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "Data sources"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": "geneattrib.csv",
+						"container": "tau"
+					},
+					"columnDelimiter": ";",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/storageblob')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_mysql_src')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "mysqlcon",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"tableName": {
+						"type": "string",
+						"defaultValue": "gene"
+					}
+				},
+				"folder": {
+					"name": "Data sources"
+				},
+				"annotations": [
+					"azure mysql genome database"
+				],
+				"type": "AzureMySqlTable",
+				"schema": [],
+				"typeProperties": {
+					"tableName": {
+						"value": "@dataset().tableName",
+						"type": "Expression"
+					}
+				}
 			},
 			"dependsOn": []
 		},
@@ -1031,7 +1831,9 @@
 				"lastPublishTime": "2021-04-13T11:02:45Z"
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/datasets/ds_mysql_src')]"
+				"[concat(variables('factoryId'), '/datasets/ds_mysql_src')]",
+				"[concat(variables('factoryId'), '/datasets/ds_gene_src')]",
+				"[concat(variables('factoryId'), '/datasets/ds_gene_dest')]"
 			]
 		},
 		{
@@ -1383,6 +2185,8 @@
 				"lastPublishTime": "2020-08-27T12:31:34Z"
 			},
 			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/ds_gene_src')]",
+				"[concat(variables('factoryId'), '/datasets/ds_gene_dest')]",
 				"[concat(variables('factoryId'), '/datasets/ds_geneattrib_src')]",
 				"[concat(variables('factoryId'), '/datasets/ds_geneattrib_dest')]"
 			]
@@ -1445,6 +2249,468 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/pipelines/pl_entity_load')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_sales_load')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Load Entities",
+						"type": "ForEach",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@variables('entities')",
+								"type": "Expression"
+							},
+							"isSequential": false,
+							"activities": [
+								{
+									"name": "Load Entity",
+									"type": "ExecutePipeline",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"pipeline": {
+											"referenceName": "pl_entity_load",
+											"type": "PipelineReference"
+										},
+										"waitOnCompletion": true,
+										"parameters": {
+											"EntityName": {
+												"value": "@item()",
+												"type": "Expression"
+											}
+										}
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "Data Quality Check",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Load Entities",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@variables('entities')",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "Data Quality Checks",
+									"type": "DatabricksNotebook",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"notebookPath": "/hub/DQEngine",
+										"baseParameters": {
+											"Entity": {
+												"value": "@item()",
+												"type": "Expression"
+											},
+											"ProcessType": "batch"
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "adb_etl",
+										"type": "LinkedServiceReference"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "Load To DW",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Data Quality Check",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@variables('entities')",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "Load Entity to Interim Storage",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureDatabricksDeltaLakeSource",
+											"exportSettings": {
+												"type": "AzureDatabricksDeltaLakeExportCommand"
+											}
+										},
+										"sink": {
+											"type": "ParquetSink",
+											"storeSettings": {
+												"type": "AzureBlobStorageWriteSettings"
+											},
+											"formatSettings": {
+												"type": "ParquetWriteSettings"
+											}
+										},
+										"enableStaging": false
+									},
+									"inputs": [
+										{
+											"referenceName": "ds_deltalake",
+											"type": "DatasetReference",
+											"parameters": {
+												"EntityName": {
+													"value": "@if(equals(item(),'customers'),'curated.Customer',if(equals(item(),'salesterritory'),'curated.SalesTerritory','curated.Order'))",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ds_synapsetemp",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									]
+								},
+								{
+									"name": "Load to DW",
+									"type": "Copy",
+									"dependsOn": [
+										{
+											"activity": "Load Entity to Interim Storage",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "ParquetSource",
+											"storeSettings": {
+												"type": "AzureBlobStorageReadSettings",
+												"recursive": true,
+												"wildcardFileName": "*.parquet",
+												"enablePartitionDiscovery": false
+											}
+										},
+										"sink": {
+											"type": "SqlDWSink"
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "ds_synapsetemp",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ds_synapse",
+											"type": "DatasetReference",
+											"parameters": {
+												"EntityName": {
+													"value": "@if(equals(item(),'customers'),'Sales.DimCustomer',if(equals(item(),'salesterritory'),'Sales.SalesTerritory','Sales.FactOrder'))",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								},
+								{
+									"name": "Delete Temp File",
+									"type": "Delete",
+									"dependsOn": [
+										{
+											"activity": "Load to DW",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"dataset": {
+											"referenceName": "ds_synapsetemp",
+											"type": "DatasetReference",
+											"parameters": {}
+										},
+										"enableLogging": false,
+										"storeSettings": {
+											"type": "AzureBlobStorageReadSettings",
+											"recursive": true,
+											"enablePartitionDiscovery": false
+										}
+									}
+								}
+							]
+						}
+					}
+				],
+				"variables": {
+					"entities": {
+						"type": "Array",
+						"defaultValue": [
+							"customers",
+							"salesterritory",
+							"orders"
+						]
+					}
+				},
+				"folder": {
+					"name": "HUB"
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/pl_entity_load')]",
+				"[concat(variables('factoryId'), '/datasets/ds_deltalake')]",
+				"[concat(variables('factoryId'), '/datasets/ds_synapsetemp')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_sales_load_copy1')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Load Entities",
+						"type": "ForEach",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@variables('entities')",
+								"type": "Expression"
+							},
+							"isSequential": false,
+							"activities": [
+								{
+									"name": "Load Entity",
+									"type": "ExecutePipeline",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"pipeline": {
+											"referenceName": "pl_entity_load",
+											"type": "PipelineReference"
+										},
+										"waitOnCompletion": true,
+										"parameters": {
+											"EntityName": {
+												"value": "@item()",
+												"type": "Expression"
+											}
+										}
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "Data Quality Check",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Load Entities",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@variables('entities')",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "Data Quality Checks",
+									"type": "DatabricksNotebook",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"notebookPath": "/hub/DQEngine",
+										"baseParameters": {
+											"Entity": {
+												"value": "@item()",
+												"type": "Expression"
+											},
+											"ProcessType": "batch"
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "adb_etl",
+										"type": "LinkedServiceReference"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "Load To DW",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Data Quality Check",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@variables('entities')",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "Load Entity to DW",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureDatabricksDeltaLakeSource",
+											"exportSettings": {
+												"type": "AzureDatabricksDeltaLakeExportCommand"
+											}
+										},
+										"sink": {
+											"type": "SqlDWSink"
+										},
+										"enableStaging": true,
+										"stagingSettings": {
+											"linkedServiceName": {
+												"referenceName": "ls_storage",
+												"type": "LinkedServiceReference"
+											},
+											"path": ""
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "ds_deltalake",
+											"type": "DatasetReference",
+											"parameters": {
+												"EntityName": {
+													"value": "@if(equals(item(),'customers'),'curated.Customer',if(equals(item(),'salesterritory'),'curated.SalesTerritory','curated.Order'))",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ds_synapse",
+											"type": "DatasetReference",
+											"parameters": {
+												"EntityName": {
+													"value": "@if(equals(item(),'customers'),'Sales.DimCustomer',if(equals(item(),'salesterritory'),'Sales.SalesTerritory','Sales.FactOrder'))",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"variables": {
+					"entities": {
+						"type": "Array",
+						"defaultValue": [
+							"customers",
+							"salesterritory",
+							"orders"
+						]
+					}
+				},
+				"folder": {
+					"name": "HUB"
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/pl_entity_load')]",
+				"[concat(variables('factoryId'), '/datasets/ds_deltalake')]"
 			]
 		}
 	]
