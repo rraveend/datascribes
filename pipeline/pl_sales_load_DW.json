@@ -3,65 +3,9 @@
 	"properties": {
 		"activities": [
 			{
-				"name": "Load Entity to Interim Storage_copy",
-				"type": "Copy",
-				"dependsOn": [],
-				"policy": {
-					"timeout": "7.00:00:00",
-					"retry": 0,
-					"retryIntervalInSeconds": 30,
-					"secureOutput": false,
-					"secureInput": false
-				},
-				"userProperties": [],
-				"typeProperties": {
-					"source": {
-						"type": "AzureDatabricksDeltaLakeSource",
-						"exportSettings": {
-							"type": "AzureDatabricksDeltaLakeExportCommand"
-						}
-					},
-					"sink": {
-						"type": "ParquetSink",
-						"storeSettings": {
-							"type": "AzureBlobStorageWriteSettings"
-						},
-						"formatSettings": {
-							"type": "ParquetWriteSettings"
-						}
-					},
-					"enableStaging": false
-				},
-				"inputs": [
-					{
-						"referenceName": "ds_deltalake",
-						"type": "DatasetReference",
-						"parameters": {
-							"EntityName": {
-								"value": "Customer",
-								"type": "Expression"
-							}
-						}
-					}
-				],
-				"outputs": [
-					{
-						"referenceName": "ds_synapsetemp",
-						"type": "DatasetReference"
-					}
-				]
-			},
-			{
 				"name": "Load to DW_copy1",
 				"type": "Copy",
-				"dependsOn": [
-					{
-						"activity": "Load Entity to Interim Storage_copy",
-						"dependencyConditions": [
-							"Succeeded"
-						]
-					}
-				],
+				"dependsOn": [],
 				"policy": {
 					"timeout": "7.00:00:00",
 					"retry": 0,
@@ -76,7 +20,6 @@
 						"storeSettings": {
 							"type": "AzureBlobStorageReadSettings",
 							"recursive": true,
-							"wildcardFolderPath": "*",
 							"wildcardFileName": "*.parquet",
 							"enablePartitionDiscovery": false
 						}
