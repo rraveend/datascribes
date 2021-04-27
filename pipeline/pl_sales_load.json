@@ -124,13 +124,13 @@
 								"sink": {
 									"type": "ParquetSink",
 									"storeSettings": {
-										"type": "AzureBlobFSWriteSettings"
+										"type": "AzureBlobStorageWriteSettings"
 									},
 									"formatSettings": {
 										"type": "ParquetWriteSettings"
 									}
 								},
-								"enableStaging": true
+								"enableStaging": false
 							},
 							"inputs": [
 								{
@@ -146,14 +146,8 @@
 							],
 							"outputs": [
 								{
-									"referenceName": "ds_deltalake_parquet",
-									"type": "DatasetReference",
-									"parameters": {
-										"EntityName": {
-											"value": "@item()",
-											"type": "Expression"
-										}
-									}
+									"referenceName": "ds_synapsetemp",
+									"type": "DatasetReference"
 								}
 							]
 						},
@@ -180,7 +174,7 @@
 								"source": {
 									"type": "ParquetSource",
 									"storeSettings": {
-										"type": "AzureBlobFSReadSettings",
+										"type": "AzureBlobStorageReadSettings",
 										"recursive": true,
 										"enablePartitionDiscovery": false
 									}
@@ -200,14 +194,8 @@
 							},
 							"inputs": [
 								{
-									"referenceName": "ds_deltalake_parquet",
-									"type": "DatasetReference",
-									"parameters": {
-										"EntityName": {
-											"value": "@item()",
-											"type": "Expression"
-										}
-									}
+									"referenceName": "ds_synapsetemp",
+									"type": "DatasetReference"
 								}
 							],
 							"outputs": [
@@ -244,18 +232,12 @@
 							"userProperties": [],
 							"typeProperties": {
 								"dataset": {
-									"referenceName": "ds_deltalake_parquet",
-									"type": "DatasetReference",
-									"parameters": {
-										"EntityName": {
-											"value": "@item()",
-											"type": "Expression"
-										}
-									}
+									"referenceName": "ds_synapsetemp",
+									"type": "DatasetReference"
 								},
 								"enableLogging": false,
 								"storeSettings": {
-									"type": "AzureBlobFSReadSettings",
+									"type": "AzureBlobStorageReadSettings",
 									"recursive": true,
 									"enablePartitionDiscovery": false
 								}
