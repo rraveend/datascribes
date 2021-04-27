@@ -48,7 +48,7 @@
 						"type": "DatasetReference",
 						"parameters": {
 							"EntityName": {
-								"value": "DimCustomer",
+								"value": "@pipeline().parameters.TargetTable",
 								"type": "Expression"
 							},
 							"Schema": {
@@ -95,7 +95,7 @@
 						"type": "DatasetReference",
 						"parameters": {
 							"EntityName": {
-								"value": "Customer",
+								"value": "@pipeline().parameters.EntityName",
 								"type": "Expression"
 							}
 						}
@@ -109,6 +109,16 @@
 				]
 			}
 		],
+		"parameters": {
+			"EntityName": {
+				"type": "string",
+				"defaultValue": "SalesTerritory"
+			},
+			"TargetTable": {
+				"type": "string",
+				"defaultValue": "DimSalesTerritory"
+			}
+		},
 		"variables": {
 			"entities": {
 				"type": "Array",
