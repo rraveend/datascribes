@@ -1,0 +1,33 @@
+{
+	"name": "ds_deltalake_parquet",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "adls_dl",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"EntityName": {
+				"type": "string",
+				"defaultValue": "customer"
+			}
+		},
+		"folder": {
+			"name": "HUB/Targets"
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": {
+					"value": "@dataset().EntityName",
+					"type": "Expression"
+				},
+				"folderPath": "dwload",
+				"fileSystem": "curated"
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": []
+	}
+}

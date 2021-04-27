@@ -16,7 +16,8 @@
 		"annotations": [],
 		"type": "AzureDatabricksDeltaLakeDataset",
 		"typeProperties": {
-			"database": "curated"
+			"database": "curated",
+			"table": "customer"
 		},
 		"schema": []
 	}
