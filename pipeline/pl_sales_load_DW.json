@@ -5,6 +5,59 @@
 			{
 				"name": "Load Entity to DW",
 				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "Extract from Delta",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "ParquetSource",
+						"storeSettings": {
+							"type": "AzureBlobStorageReadSettings",
+							"recursive": true,
+							"wildcardFileName": "*.parquet",
+							"enablePartitionDiscovery": false
+						}
+					},
+					"sink": {
+						"type": "SqlDWSink"
+					},
+					"enableStaging": false
+				},
+				"inputs": [
+					{
+						"referenceName": "ds_synapsetemp",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_synapse",
+						"type": "DatasetReference",
+						"parameters": {
+							"EntityName": {
+								"value": "Sales.DimCustomer",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			},
+			{
+				"name": "Extract from Delta",
+				"type": "Copy",
 				"dependsOn": [],
 				"policy": {
 					"timeout": "7.00:00:00",
@@ -22,7 +75,13 @@
 						}
 					},
 					"sink": {
-						"type": "SqlDWSink"
+						"type": "ParquetSink",
+						"storeSettings": {
+							"type": "AzureBlobStorageWriteSettings"
+						},
+						"formatSettings": {
+							"type": "ParquetWriteSettings"
+						}
 					},
 					"enableStaging": true,
 					"stagingSettings": {
@@ -47,14 +106,8 @@
 				],
 				"outputs": [
 					{
-						"referenceName": "ds_synapse",
-						"type": "DatasetReference",
-						"parameters": {
-							"EntityName": {
-								"value": "Sales.DimCustomer",
-								"type": "Expression"
-							}
-						}
+						"referenceName": "ds_synapsetemp",
+						"type": "DatasetReference"
 					}
 				]
 			}
