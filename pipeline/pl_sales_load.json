@@ -49,6 +49,10 @@
 				],
 				"userProperties": [],
 				"typeProperties": {
+					"items": {
+						"value": "@variables('entities')",
+						"type": "Expression"
+					},
 					"activities": [
 						{
 							"name": "Data Quality Checks",
