@@ -124,7 +124,14 @@
 								"sink": {
 									"type": "SqlDWSink"
 								},
-								"enableStaging": true
+								"enableStaging": true,
+								"stagingSettings": {
+									"linkedServiceName": {
+										"referenceName": "ls_storage",
+										"type": "LinkedServiceReference"
+									},
+									"path": "synapsetemp"
+								}
 							},
 							"inputs": [
 								{
