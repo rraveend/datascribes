@@ -87,14 +87,7 @@
 							"type": "ParquetWriteSettings"
 						}
 					},
-					"enableStaging": true,
-					"stagingSettings": {
-						"linkedServiceName": {
-							"referenceName": "ls_storage",
-							"type": "LinkedServiceReference"
-						},
-						"path": ""
-					}
+					"enableStaging": false
 				},
 				"inputs": [
 					{
