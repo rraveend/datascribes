@@ -1,0 +1,24 @@
+{
+	"name": "ds_synapse",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_synapsehub",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"EntityName": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "HUB/Targets"
+		},
+		"annotations": [],
+		"type": "AzureSqlDWTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": "Sales",
+			"table": "DimCustomer"
+		}
+	}
+}

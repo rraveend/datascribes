@@ -1,0 +1,23 @@
+{
+	"name": "ds_deltalake",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_deltalake",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"EntityName": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "HUB/Sources"
+		},
+		"annotations": [],
+		"type": "AzureDatabricksDeltaLakeDataset",
+		"typeProperties": {
+			"database": "curated"
+		},
+		"schema": []
+	}
+}
