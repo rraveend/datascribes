@@ -1,0 +1,267 @@
+{
+	"name": "pl_sales_load_WithDW",
+	"properties": {
+		"activities": [
+			{
+				"name": "Load Entities",
+				"type": "ForEach",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@variables('entities')",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"activities": [
+						{
+							"name": "Load Entity",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "pl_entity_load",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"EntityName": {
+										"value": "@item()",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "Data Quality Check",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Load Entities",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@variables('entities')",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "Data Quality Checks",
+							"type": "DatabricksNotebook",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": "/hub/DQEngine",
+								"baseParameters": {
+									"Entity": {
+										"value": "@item()",
+										"type": "Expression"
+									},
+									"ProcessType": "batch"
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "adb_etl",
+								"type": "LinkedServiceReference"
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "Load To DW",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Data Quality Check",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@variables('entities')",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "Load Entity to Interim Storage",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureDatabricksDeltaLakeSource",
+									"exportSettings": {
+										"type": "AzureDatabricksDeltaLakeExportCommand"
+									}
+								},
+								"sink": {
+									"type": "ParquetSink",
+									"storeSettings": {
+										"type": "AzureBlobStorageWriteSettings"
+									},
+									"formatSettings": {
+										"type": "ParquetWriteSettings"
+									}
+								},
+								"enableStaging": false
+							},
+							"inputs": [
+								{
+									"referenceName": "ds_deltalake",
+									"type": "DatasetReference",
+									"parameters": {
+										"EntityName": {
+											"value": "@if(equals(item(),'customers'),'curated.Customer',if(equals(item(),'salesterritory'),'curated.SalesTerritory','curated.Order'))",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "ds_synapsetemp",
+									"type": "DatasetReference"
+								}
+							]
+						},
+						{
+							"name": "Load to DW",
+							"type": "Copy",
+							"dependsOn": [
+								{
+									"activity": "Load Entity to Interim Storage",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "ParquetSource",
+									"storeSettings": {
+										"type": "AzureBlobStorageReadSettings",
+										"recursive": true,
+										"wildcardFolderPath": "*",
+										"wildcardFileName": "*.parquet",
+										"enablePartitionDiscovery": false
+									}
+								},
+								"sink": {
+									"type": "SqlDWSink"
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "ds_synapsetemp",
+									"type": "DatasetReference"
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "ds_synapse",
+									"type": "DatasetReference",
+									"parameters": {
+										"EntityName": {
+											"value": "@if(equals(item(),'customers'),'Sales.DimCustomer',if(equals(item(),'salesterritory'),'Sales.SalesTerritory','Sales.FactOrder'))",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						},
+						{
+							"name": "Delete Temp File",
+							"type": "Delete",
+							"dependsOn": [
+								{
+									"activity": "Load to DW",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"dataset": {
+									"referenceName": "ds_synapsetemp",
+									"type": "DatasetReference"
+								},
+								"enableLogging": false,
+								"storeSettings": {
+									"type": "AzureBlobStorageReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"variables": {
+			"entities": {
+				"type": "Array",
+				"defaultValue": [
+					"customers",
+					"salesterritory",
+					"orders"
+				]
+			}
+		},
+		"folder": {
+			"name": "HUB"
+		},
+		"annotations": []
+	}
+}
