@@ -121,12 +121,39 @@
 										"type": "AzureDatabricksDeltaLakeExportCommand"
 									}
 								},
+								"sink": {
+									"type": "SqlDWSink",
+									"allowPolyBase": true,
+									"polyBaseSettings": {
+										"rejectValue": 0,
+										"rejectType": "value",
+										"useTypeDefault": true
+									}
+								},
 								"enableStaging": false
 							},
 							"inputs": [
 								{
 									"referenceName": "ds_deltalake",
-									"type": "DatasetReference"
+									"type": "DatasetReference",
+									"parameters": {
+										"EntityName": {
+											"value": "@if(equals(item(),'customers'),'curated.Customer',if(equals(item(),'salesterritory'),'curated.SalesTerritory','curated.Order'))",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "ds_synapse",
+									"type": "DatasetReference",
+									"parameters": {
+										"EntityName": {
+											"value": "@if(equals(item(),'customers'),'Sales.DimCustomer',if(equals(item(),'salesterritory'),'Sales.DimSalesTerritory','Sales.FactOrder'))",
+											"type": "Expression"
+										}
+									}
 								}
 							]
 						}
