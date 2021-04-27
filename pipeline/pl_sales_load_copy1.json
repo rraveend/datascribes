@@ -130,7 +130,7 @@
 										"referenceName": "ls_storage",
 										"type": "LinkedServiceReference"
 									},
-									"path": "synapsetemp"
+									"path": "hubsynapsetemp"
 								}
 							},
 							"inputs": [
