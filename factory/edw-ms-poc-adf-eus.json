@@ -1,0 +1,9 @@
+{
+	"name": "edw-ms-poc-adf-eus",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "51003dbe-8068-4c3f-89e2-6e8fe8d24524",
+		"tenantId": "7b6f35d2-1f98-4e5e-82eb-e78f6ea5a1de"
+	}
+}
