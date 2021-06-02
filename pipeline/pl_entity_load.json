@@ -31,6 +31,7 @@
 					],
 					"storeSettings": {
 						"type": "AzureBlobFSReadSettings",
+						"recursive": true,
 						"enablePartitionDiscovery": false
 					},
 					"formatSettings": {
@@ -70,10 +71,6 @@
 						"value": "@replace(concat('[',join(activity('Get Entity Metadata').output.structure,','),']'),'\\','')",
 						"type": "Expression"
 					}
-				},
-				"linkedServiceName": {
-					"referenceName": "ls_af_datavalidation",
-					"type": "LinkedServiceReference"
 				}
 			},
 			{
@@ -229,7 +226,7 @@
 			}
 		},
 		"folder": {
-			"name": "HUB"
+			"name": "UKG"
 		},
 		"annotations": []
 	}

@@ -1,10 +1,6 @@
 {
 	"name": "ds_synapse",
 	"properties": {
-		"linkedServiceName": {
-			"referenceName": "ls_synapsehub",
-			"type": "LinkedServiceReference"
-		},
 		"parameters": {
 			"EntityName": {
 				"type": "string",
@@ -16,7 +12,7 @@
 			}
 		},
 		"folder": {
-			"name": "HUB/Targets"
+			"name": "UKG/Targets"
 		},
 		"annotations": [],
 		"type": "AzureSqlDWTable",

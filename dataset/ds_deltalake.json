@@ -12,7 +12,7 @@
 			}
 		},
 		"folder": {
-			"name": "HUB/Sources"
+			"name": "UKG/Sources"
 		},
 		"annotations": [],
 		"type": "AzureDatabricksDeltaLakeDataset",

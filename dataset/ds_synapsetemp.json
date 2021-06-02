@@ -6,7 +6,7 @@
 			"type": "LinkedServiceReference"
 		},
 		"folder": {
-			"name": "HUB/Targets"
+			"name": "UKG/Targets"
 		},
 		"annotations": [],
 		"type": "Parquet",
