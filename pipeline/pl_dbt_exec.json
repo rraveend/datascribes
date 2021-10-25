@@ -15,7 +15,7 @@
 				},
 				"userProperties": [],
 				"typeProperties": {
-					"functionName": "dbtOrchestrator",
+					"functionName": "orchestrators/dbtOrchestrator",
 					"method": "POST",
 					"body": {
 						"models": "accountholdingscmp"
@@ -24,6 +24,64 @@
 				"linkedServiceName": {
 					"referenceName": "afunc",
 					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "Check Job is Completed",
+				"type": "Until",
+				"dependsOn": [
+					{
+						"activity": "AF DBT run",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@not(or(equals(activity('Get Current Function Status').output.runtimeStatus, 'Pending'), equals(activity('Get Current Function Status').output.runtimeStatus, 'Running')))",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "Wait to Status complete",
+							"type": "Wait",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"waitTimeInSeconds": 5
+							}
+						},
+						{
+							"name": "Get Current Function Status",
+							"type": "WebActivity",
+							"dependsOn": [
+								{
+									"activity": "Wait to Status complete",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"url": {
+									"value": "@activity('AF DBT run').output.statusQueryGetUri",
+									"type": "Expression"
+								},
+								"method": "GET"
+							}
+						}
+					],
+					"timeout": "7.00:00:00"
 				}
 			}
 		],
